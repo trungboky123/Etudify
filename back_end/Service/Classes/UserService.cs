@@ -1,0 +1,189 @@
+﻿using System.Text;
+using back_end.Components;
+using back_end.Dto.Request;
+using back_end.Dto.Response;
+using back_end.Service.Interfaces;
+using back_end.Entity;
+using back_end.Repository.Interfaces;
+using back_end.Validator;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Localization;
+
+namespace back_end.Service.Classes;
+
+public class UserService : IUserService
+{
+    private readonly UserManager<User> _userManager;
+    private readonly RegisterValidator _registerValidator;
+    private readonly UpdateUserValidator _updateUserValidator;
+    private readonly CloudinaryService _cloudinaryService;
+    private readonly IStringLocalizer<Messages> _localizer;
+    private readonly BackgroundTaskQueue _taskQueue;
+    private readonly MailSender _mailSender;
+    private readonly IUserRepository _userRepository;
+
+    public UserService(UserManager<User> userManager, RegisterValidator registerValidator, UpdateUserValidator updateUserValidator, CloudinaryService cloudinaryService, IStringLocalizer<Messages> localizer, BackgroundTaskQueue taskQueue, MailSender mailSender, IUserRepository userRepository)
+    {
+        _userManager = userManager;
+        _registerValidator = registerValidator;
+        _updateUserValidator = updateUserValidator;
+        _cloudinaryService = cloudinaryService;
+        _localizer = localizer;
+        _taskQueue = taskQueue;
+        _mailSender = mailSender;
+        _userRepository = userRepository;
+    }
+    
+    public async Task<IdentityResult> RegisterAsync(RegisterRequest request)
+    {
+        var user = new User
+        {
+            UserName = request.Username,
+            FullName = request.FullName,
+            Email = request.Email,
+            AvatarUrl = "https://i.pinimg.com/736x/21/91/6e/21916e491ef0d796398f5724c313bbe7.jpg",
+            Status = true,
+            EmailConfirmed = false
+        };
+        
+        var result = await _userManager.CreateAsync(user, request.Password);
+        if (!result.Succeeded)
+        {
+            return result;
+        }
+
+        var role = await _userManager.AddToRoleAsync(user, "Student");
+        if (!role.Succeeded)
+        {
+            await _userManager.DeleteAsync(user);
+            return role;
+        }
+        
+        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        var link = $"http://localhost:5062/auth/verify-email?&userId={user.Id}&email={user.Email}&token={encoded}";
+        _taskQueue.QueueBackgroundWorkItem(async () =>
+        {
+            await _mailSender.SendCodeEmailAsync(user.Email, user.UserName, link);
+        });
+
+        return IdentityResult.Success;
+    }
+
+    public async Task CodeChangeEmail(User user, string email)
+    {
+        var userId = user.Id;
+        var token = await _userManager.GenerateChangeEmailTokenAsync(user, email);
+        var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        var link = $"http://localhost:5062/users/verify-new-email?&userId={userId}&email={email}&token={encoded}";
+        
+        _taskQueue.QueueBackgroundWorkItem(async () =>
+        {
+            await _mailSender.SendCodeEmailAsync(email, user.UserName, link);
+        });
+    }
+
+    public async Task<IdentityResult> RegisterCheck(RegisterRequest request)
+    {
+        var validate = _registerValidator.Validate(request);
+        if (!validate.IsValid)
+        {
+            var error = validate.Errors.First();
+            return IdentityResult.Failed(new IdentityError
+            {
+                Description = error.ErrorMessage
+            });
+        }
+        
+        var duplicateEmail = await _userManager.FindByEmailAsync(request.Email);
+        if (duplicateEmail != null)
+        {
+            return IdentityResult.Failed(new IdentityError
+            {
+                Description = _localizer["EmailExisted"]
+            });
+        }
+        
+        var duplicateUsername = await _userManager.FindByNameAsync(request.Username);
+        if (duplicateUsername != null)
+        {
+            return IdentityResult.Failed(new IdentityError
+            {
+                Description = _localizer["UsernameExisted"]
+            });
+        }
+
+        return IdentityResult.Success;
+    }
+
+    public async Task UpdateMe(string? userId, UpdateUserRequest request, IFormFile? avatar)
+    {
+        var validate = _updateUserValidator.Validate(request);
+        if (!validate.IsValid)
+        {
+            var error = validate.Errors.First();
+            throw new ApiExceptionResponse(error.ErrorMessage);
+        }
+        
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return;
+        
+        bool updated = false;
+
+        if (request.RemoveAvatar)
+        {
+            user.AvatarUrl = "https://i.pinimg.com/736x/21/91/6e/21916e491ef0d796398f5724c313bbe7.jpg";
+            updated = true;
+        }
+
+        if (request.FullName != null)
+        {
+            if (string.IsNullOrWhiteSpace(request.FullName)) throw new ApiExceptionResponse(_localizer["FullNameRequired"]);
+            user.FullName = request.FullName;
+            updated = true;
+        }
+        
+        if (request.UserName != null)
+        {
+            if (string.IsNullOrWhiteSpace(request.UserName)) throw new ApiExceptionResponse(_localizer["UsernameRequired"]);
+            var duplicate = await _userManager.FindByNameAsync(request.UserName);
+            if (duplicate != null)
+            {
+                throw new ApiExceptionResponse(_localizer["UsernameExisted"]);
+            }
+            user.UserName = request.UserName;
+            updated = true;
+        }
+
+        if (request.NewPassword != null)
+        {
+            if (string.IsNullOrEmpty(request.CurrentPassword)) throw new ApiExceptionResponse(_localizer["CurrentPasswordRequired"]);
+            if (!await _userManager.CheckPasswordAsync(user, request.CurrentPassword)) throw new ApiExceptionResponse(_localizer["CurrentPasswordIncorrect"]);
+
+            var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+            if (!result.Succeeded)
+            {
+                var error = result.Errors.First();
+                throw new ApiExceptionResponse(error.Description);
+            }
+
+            updated = true;
+        }
+
+        if (avatar != null && avatar.Length > 0)
+        {
+            string avatarUrl = await _cloudinaryService.UploadUserAvatar(avatar, userId);
+            user.AvatarUrl = avatarUrl;
+            updated = true;
+        }
+
+        if (!updated) throw new ApiExceptionResponse(_localizer["NoFields"]);
+        await _userManager.UpdateAsync(user);
+    }
+
+    public async Task<int> GetTotalUsers()
+    {
+        return await _userRepository.TotalUsers();
+    }
+}

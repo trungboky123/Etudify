@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+
+    <data name="LoginSuccess" xml:space="preserve">
+        <value>Login Successfully!</value>
+    </data>
+    <data name="RegisterSuccess" xml:space="preserve">
+        <value>Register Successfully! Please check your email for the verification</value>
+    </data>
+    <data name="UsernameEmailNotFound" xml:space="preserve">
+        <value>Username or Email not found!</value>
+    </data>
+    <data name="PasswordIncorrect" xml:space="preserve">
+        <value>Incorrect Password!</value>
+    </data>
+    <data name="PasswordInvalid" xml:space="preserve">
+        <value>Password must contain at least 8 characters, 1 uppercase, 1 lowercase and 1 special characters!</value>
+    </data>
+    <data name="RefreshTokenInvalid" xml:space="preserve">
+        <value>Invalid Token!</value>
+    </data>
+    <data name="UpdateSuccess" xml:space="preserve">
+        <value>Updated Successfully!</value>
+    </data>
+    <data name="EmailVerified" xml:space="preserve">
+        <value>Email Verified!</value>
+    </data>
+    <data name="CurrentEmailIncorrect" xml:space="preserve">
+        <value>Current Email is incorrect!</value>
+    </data>
+    <data name="FullNameMaximum" xml:space="preserve">
+        <value>Maximum of Full Name is 50 characters!</value>
+    </data>
+    <data name="UsernameNotContainSpace" xml:space="preserve">
+        <value>Username cannot contain space!</value>
+    </data>
+    <data name="UsernameMaximum" xml:space="preserve">
+        <value>Maximum of Username is 50 characters!</value>
+    </data>
+    <data name="EmailMaximum" xml:space="preserve">
+        <value>Maximum of Email is 255 characters!</value>
+    </data>
+    <data name="EmailInvalid" xml:space="preserve">
+        <value>Invalid Email!</value>
+    </data>
+    <data name="EmailRequired" xml:space="preserve">
+        <value>Email is required!</value>
+    </data>
+    <data name="FullNameRequired" xml:space="preserve">
+        <value>Full Name is required!</value>
+    </data>
+    <data name="UsernameRequired" xml:space="preserve">
+        <value>Username is required!</value>
+    </data>
+    <data name="PasswordRequired" xml:space="preserve">
+        <value>Password is required!</value>
+    </data>
+    <data name="CodeInvalid" xml:space="preserve">
+        <value>Invalid Code!</value>
+    </data>
+    <data name="CodeUsed" xml:space="preserve">
+        <value>Code has been used!</value>
+    </data>
+    <data name="CodeExpired" xml:space="preserve">
+        <value>Code has been expired! Please resend new code</value>
+    </data>
+    <data name="CodeIncorrect" xml:space="preserve">
+        <value>Incorrect Code!</value>
+    </data>
+    <data name="EmailExisted" xml:space="preserve">
+        <value>Email has already existed!</value>
+    </data>
+    <data name="UsernameExisted" xml:space="preserve">
+        <value>Username has already existed!</value>
+    </data>
+    <data name="NoFields" xml:space="preserve">
+        <value>No Fields to update!</value>
+    </data>
+    <data name="CurrentPasswordRequired" xml:space="preserve">
+        <value>Current Password is required!</value>
+    </data>
+    <data name="CurrentPasswordIncorrect" xml:space="preserve">
+        <value>Current Password is incorrect!</value>
+    </data>
+    <data name="EmailNotVerified" xml:space="preserve">
+        <value>Your email has not been verified! Please verify your email</value>
+    </data>
+</root>

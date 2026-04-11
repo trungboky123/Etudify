@@ -1,5 +1,7 @@
 <script setup>
 import authAxios from '@/function/authAxios'
+import { useAuthStore } from '@/stores/auth'
+import { redirect } from 'react-router-dom'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -7,13 +9,7 @@ import { useRoute, useRouter } from 'vue-router'
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
-const originalData = ref({
-  id: "",
-  username: '',
-  fullName: '',
-  email: '',
-  avatarUrl: '',
-})
+const auth = useAuthStore()
 const newData = ref({})
 const passwordData = ref({
   currentPassword: '',
@@ -40,7 +36,7 @@ const isLoadingNewEmail = ref(false)
 const currentEmailVerified = ref(false)
 
 const maskedEmail = computed(() => {
-  const email = originalData.value.email
+  const email = auth.user?.email
   if (!email) return ''
 
   const [text, domain] = email.split('@')
@@ -51,32 +47,24 @@ const maskedEmail = computed(() => {
   return `${masked}${visible}@${domain}`
 })
 
-const fetchUser = async () => {
-  let res = null
+onMounted(async () => {
   try {
-    res = await authAxios.get(`/users/me`)
+    await auth.fetchUser()
   } catch (error) {
     router.push({
       path: '/login',
       query: {
         redirect: route.fullPath,
-      },
+      }
     })
-    return
   }
 
-  const data = res.data
-  originalData.value = data
-}
-
-onMounted(async () => {
-  await fetchUser()
   const id = route.params.id
-  if (originalData.value.id && id !== originalData.value.id) {
+  if (auth.user?.id && id !== auth.user.id) {
     router.push('/error')
   }
 
-  document.title = `${originalData.value.fullName} | My Profile`
+  document.title = `${auth.user?.fullName} | My Profile`
 })
 
 const handleAvatarChange = (e) => {
@@ -91,7 +79,7 @@ const handleRemoveAvatar = () => {
   avatarPreview.value = 'https://i.pinimg.com/736x/21/91/6e/21916e491ef0d796398f5724c313bbe7.jpg'
   avatarFile.value = null
 
-  originalData.value.avatarUrl =
+  auth.user.avatarUrl =
     'https://i.pinimg.com/736x/21/91/6e/21916e491ef0d796398f5724c313bbe7.jpg'
   newData.value.removeAvatar = true
 
@@ -168,7 +156,6 @@ const sendCode = async () => {
 }
 
 const saveProfile = async () => {
-  console.log(newData.value.fullName)
   const formData = new FormData()
   const lang = localStorage.getItem('lang') || 'en'
   if (newData.value.fullName) {
@@ -217,6 +204,16 @@ const saveProfile = async () => {
 
   message.value = res.data?.message?.value
   isUpdated.value = true
+
+  let timer = null
+  if (timer) clearTimeout(timer)
+
+  timer = setTimeout(() => {
+    auth.fetchUser()
+    message.value = ''
+    isEditing.value = false
+    isUpdated.value = false
+  }, 1500)
 }
 </script>
 
@@ -259,7 +256,7 @@ const saveProfile = async () => {
               <div class="avatar">
                 <div class="avatar__wrapper">
                   <img
-                    :src="avatarPreview || originalData.avatarUrl"
+                    :src="avatarPreview || auth.user?.avatarUrl"
                     alt="Avatar"
                     class="avatar__img"
                   />
@@ -294,7 +291,7 @@ const saveProfile = async () => {
                     <input
                       type="text"
                       class="form-control form__control"
-                      :value="newData.fullName ?? originalData.fullName"
+                      :value="newData.fullName ?? auth.user?.fullName"
                       @input="(e) => (newData.fullName = e.target.value)"
                       :disabled="!isEditing"
                       id="fullName"
@@ -313,7 +310,7 @@ const saveProfile = async () => {
                     <input
                       type="text"
                       class="form-control form__control"
-                      :value="newData.username ?? originalData.username"
+                      :value="newData.username ?? auth.user?.username"
                       @input="(e) => (newData.username = e.target.value)"
                       :disabled="!isEditing"
                       id="username"

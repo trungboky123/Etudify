@@ -1,3 +1,5 @@
+import AccountListPage from '@/admin pages/AccountListPage.vue'
+import AddAccountPage from '@/admin pages/AddAccountPage.vue'
 import DashboardPage from '@/admin pages/DashboardPage.vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import MainLayout from '@/layouts/MainLayout.vue'
@@ -62,6 +64,16 @@ const router = createRouter({
           path: 'dashboard',
           component: DashboardPage,
           meta: { title: "Dashboard" }
+        },
+        {
+          path: 'accounts',
+          component: AccountListPage,
+          meta: { title: "Account List" }
+        },
+        {
+          path: 'accounts/add',
+          component: AddAccountPage,
+          meta: { title: "Add Account" }
         }
       ]
     },

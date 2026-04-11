@@ -1,0 +1,1189 @@
+<script setup>
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
+import authAxios from '@/function/authAxios'
+import DeactivateConfirmation from '@/components/DeactivateConfirmation.vue'
+import SuccessfulToast from '@/components/SuccessfulToast.vue'
+
+const { t } = useI18n()
+const router = useRouter()
+const route = useRoute()
+const { sidebarCollapsed } = defineProps({
+  sidebarCollapsed: Boolean,
+})
+const users = ref([])
+const roles = ref([])
+const rolesOpen = ref(false)
+const statusOpen = ref(false)
+const rolesRef = ref(null)
+const statusRef = ref(null)
+
+const type = ref('')
+const activation = ref(false)
+const confirmOpen = ref(false)
+const selectedUserId = ref('')
+const toastOpen = ref(false)
+
+const handleClickOutside = (e) => {
+  if (rolesRef.value && !rolesRef.value.contains(e.target)) {
+    rolesOpen.value = false
+  }
+  if (statusRef.value && !statusRef.value.contains(e.target)) {
+    statusOpen.value = false
+  }
+}
+
+const searchKeyword = ref(route.query.keyword || '')
+const selectedRole = computed(() => {
+  if (!roles.value.length) return 0
+  const role = roles.value.find((r) => r.name === route.query.role)
+  return role?.id || 0
+})
+const selectedRoleName = computed(() => {
+  const role = roles.value.find((r) => r.id === selectedRole.value)
+  return role?.name || ''
+})
+const selectedStatus = computed(() => {
+  if (route.query.status === 'Active') return 'true'
+  if (route.query.status === 'Inactive') return 'false'
+  return 'all'
+})
+const selectedStatusName = computed(() => {
+  return route.query.status || ''
+})
+
+const getAllRoles = async () => {
+  const res = await authAxios.get('/users/roles')
+  roles.value = res.data
+}
+
+const getAllUsers = async () => {
+  const res = await authAxios.get('/users/all', {
+    params: {
+      keyword: route.query.keyword || '',
+      roleId: selectedRole.value || '',
+      status: selectedStatus.value || '',
+    },
+  })
+  users.value = res.data
+}
+
+const handleRoleChange = (roleId) => {
+  const role = roles.value.find((r) => r.id === roleId)
+  router.replace({
+    query: {
+      ...route.query,
+      role: role ? role.name : undefined,
+    },
+  })
+  rolesOpen.value = false
+}
+
+const handleStatusChange = (status) => {
+  let statusQuery
+
+  if (status === 'true') statusQuery = 'Active'
+  else if (status === 'false') statusQuery = 'Inactive'
+  else statusQuery = undefined
+
+  router.replace({
+    query: {
+      ...route.query,
+      status: statusQuery,
+    },
+  })
+  statusOpen.value = false
+}
+
+const getRoleBadgeClass = (role) => {
+  const roleClasses = {
+    Admin: 'roleAdmin',
+    Instructor: 'roleInstructor',
+    User: 'roleUser',
+  }
+  return roleClasses[role] || 'roleUser'
+}
+
+const getStatus = (status) => {
+  return status ? t('admin.accounts.status.active') : t('admin.accounts.status.inactive')
+}
+
+const getStatusBadgeClass = (status) => {
+  return status ? 'statusActive' : 'statusInactive'
+}
+
+const handleActivate = (userId) => {
+  type.value = 'Account'
+  activation.value = true
+  confirmOpen.value = true
+  selectedUserId.value = userId
+}
+
+const handleDeactivate = (userId) => {
+  type.value = 'Account'
+  activation.value = false
+  confirmOpen.value = true
+  selectedUserId.value = userId
+}
+
+const handleCancel = () => {
+  confirmOpen.value = false
+  selectedUserId.value = ''
+}
+
+const toggleStatus = async (userId) => {
+  await authAxios.put(`/users/status/${userId}`)
+  await getAllUsers()
+  selectedUserId.value = ''
+  confirmOpen.value = false
+  toastOpen.value = true
+
+  let timer = null
+  if (timer) clearTimeout(timer)
+  timer = setTimeout(() => {
+    toastOpen.value = false
+  }, 2500)
+}
+
+onMounted(() => {
+  getAllRoles()
+  getAllUsers()
+  document.addEventListener('mousedown', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('mousedown', handleClickOutside)
+})
+
+// Search timeout
+let timer = null
+watch(searchKeyword, (newVal) => {
+  if (timer) clearTimeout(timer)
+
+  timer = setTimeout(() => {
+    router.replace({
+      query: {
+        ...route.query,
+        keyword: newVal || undefined,
+      },
+    })
+  }, 300)
+})
+
+watch(
+  () => route.query,
+  () => getAllUsers(),
+)
+</script>
+
+<template>
+  <div
+    class="accounts"
+    :style="{
+      transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      marginLeft: sidebarCollapsed ? '85px' : '280px',
+    }"
+  >
+    <div class="container">
+      <div class="header">
+        <div>
+          <h1 class="title">{{ t('admin.accounts.title') }}</h1>
+          <p class="subtitle">{{ t('admin.accounts.subtitle') }}</p>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="filters">
+          <div class="searchBox">
+            <i class="bi bi-search"></i>
+            <input
+              type="text"
+              :placeholder="t('admin.accounts.search')"
+              v-model="searchKeyword"
+              class="searchInput"
+            />
+          </div>
+
+          <div class="dropdown" ref="rolesRef">
+            <button class="filterBtn" @click="rolesOpen = !rolesOpen">
+              <span>{{ selectedRoleName || t('admin.accounts.roles') }}</span>
+              <i :class="{ 'bi bi-chevron-down': true, rotate: rolesOpen }"></i>
+            </button>
+            <div v-if="rolesOpen" class="filterDropdownMenu">
+              <button
+                :class="{ filterDropdownItem: true, active: selectedRole === 0 }"
+                @click="handleRoleChange(0)"
+              >
+                {{ t('admin.accounts.roles') }}
+                <i v-if="selectedRole === 0" class="bi bi-check-lg"></i>
+              </button>
+              <button
+                v-for="role in roles"
+                :key="role.id"
+                :class="{ filterDropdownItem: true, active: selectedRole === role.id }"
+                @click="handleRoleChange(role.id)"
+              >
+                {{ role.name }}
+                <i v-if="selectedRole === role.id" class="bi bi-check-lg"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="dropdown" ref="statusRef">
+            <button class="filterBtn" @click="statusOpen = !statusOpen">
+              <span>{{ selectedStatusName || t('admin.accounts.allStatus') }}</span>
+              <i :class="{ 'bi bi-chevron-down': true, rotate: statusOpen }"></i>
+            </button>
+            <div v-if="statusOpen" class="filterDropdownMenu">
+              <button
+                :class="{ filterDropdownItem: true, active: selectedStatus === 'all' }"
+                @click="handleStatusChange('all')"
+              >
+                {{ t('admin.accounts.allStatus') }}
+                <i v-if="selectedStatus === 'all'" class="bi bi-check-lg"></i>
+              </button>
+              <button
+                :class="{ filterDropdownItem: true, active: selectedStatus === 'true' }"
+                @click="handleStatusChange('true')"
+              >
+                {{ t('admin.accounts.status.active') }}
+                <i v-if="selectedStatus === 'true'" class="bi bi-check-lg"></i>
+              </button>
+              <button
+                :class="{ filterDropdownItem: true, active: selectedStatus === 'false' }"
+                @click="handleStatusChange('false')"
+              >
+                {{ t('admin.accounts.status.inactive') }}
+                <i v-if="selectedStatus === 'false'" class="bi bi-check-lg"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="addBtn" @click="router.push('/admin/accounts/add')">
+            <i class="bi bi-plus-lg"></i>
+            <span>{{ t('admin.accounts.add') }}</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="resultsInfo">
+        {{ t('admin.showing') }} {{ users.length }} {{ t('admin.accounts.text') }}
+      </div>
+
+      <div class="tableWrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Index</th>
+              <th>Avatar</th>
+              <th>{{ t('admin.accounts.fullName') }}</th>
+              <th>{{ t('admin.accounts.username') }}</th>
+              <th>{{ t('admin.accounts.email') }}</th>
+              <th>{{ t('admin.accounts.role') }}</th>
+              <th>{{ t('admin.accounts.status') }}</th>
+              <th>{{ t('admin.accounts.action') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template v-if="users.length > 0">
+              <tr v-for="(user, index) in users" :key="index">
+                <td>{{ index + 1 }}</td>
+                <td>
+                  <img :src="user.avatarUrl" :alt="user.fullName" class="avatar" />
+                </td>
+                <td class="nameCell">{{ user.fullName }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>
+                  <span :class="`roleBadge ${getRoleBadgeClass(user.role)}`">
+                    {{ user.role }}
+                  </span>
+                </td>
+                <td>
+                  <span :class="`statusBadge ${getStatusBadgeClass(user.status)}`">
+                    {{ getStatus(user.status) }}
+                  </span>
+                </td>
+                <td>
+                  <div class="actionBtns">
+                    <button
+                      class="actionBtn"
+                      @click="handleEditAccount(user.id)"
+                      title="Edit Account"
+                    >
+                      <i class="bi bi-pencil-fill"></i>
+                    </button>
+                    <button
+                      v-if="user.status"
+                      class="actionBtn dangerBtn"
+                      @click="handleDeactivate(user.id)"
+                      title="Deactivate account"
+                    >
+                      <i class="bi bi-x-circle-fill"></i>
+                    </button>
+                    <button
+                      v-else
+                      class="actionBtn successBtn"
+                      @click="handleActivate(user.id)"
+                      title="Activate account"
+                    >
+                      <i className="bi bi-check-circle-fill"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </template>
+            <template v-else>
+              <tr>
+                <td colspan="8" class="emptyState">
+                  <i class="bi bi-inbox"></i>
+                  <p>No accounts found</p>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <DeactivateConfirmation v-if="confirmOpen" :id="selectedUserId" @cancel="handleCancel" :type="type" :activation="activation" @confirm="toggleStatus" />
+  <SuccessfulToast v-if="toastOpen" @close="toastOpen = false" />
+</template>
+
+<style scoped lang="scss">
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+.accounts {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%);
+  padding: 40px;
+  margin-top: 70px;
+  font-family:
+    'Plus Jakarta Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.container {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+// Header
+.header {
+  margin-bottom: 32px;
+  animation: fadeInDown 0.5s ease;
+}
+
+.title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 500;
+}
+
+// Message Box
+.messageBox {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  animation: slideDown 0.3s ease;
+  border: 1px solid;
+}
+
+.messageSuccess {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+
+  i {
+    color: #16a34a;
+  }
+}
+
+.messageWarning {
+  background: #fef3c7;
+  border-color: #fbbf24;
+  color: #92400e;
+
+  i {
+    color: #d97706;
+  }
+}
+
+.messageError {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+
+  i {
+    color: #dc2626;
+  }
+}
+
+.messageContent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+
+  i {
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+}
+
+.messageText {
+  flex: 1;
+}
+
+.messageTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.importStats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.successText {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.failedText {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  opacity: 0.6;
+
+  i {
+    font-size: 0.9rem;
+  }
+
+  &:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.05);
+  }
+}
+
+// Errors Box
+.errorsBox {
+  background: #fff;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  animation: slideDown 0.4s ease;
+}
+
+.errorsTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #991b1b;
+  margin: 0 0 16px;
+
+  i {
+    font-size: 1.2rem;
+    color: #dc2626;
+  }
+}
+
+.errorsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 8px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+
+    &:hover {
+      background: #9ca3af;
+    }
+  }
+}
+
+.errorItem {
+  display: flex;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #fef2f2;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.errorRow {
+  font-weight: 700;
+  color: #991b1b;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.errorMessage {
+  color: #7f1d1d;
+  flex: 1;
+}
+
+// Toolbar
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 24px;
+  flex-wrap: nowrap;
+  animation: fadeInUp 0.6s ease;
+}
+
+.filters {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+  flex-wrap: nowrap;
+}
+
+.searchBox {
+  position: relative;
+  flex: 1;
+  min-width: 300px;
+
+  i {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    font-size: 1.1rem;
+  }
+}
+
+.searchInput {
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+  background: #ffffff;
+
+  &:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+}
+
+.filterSelect {
+  padding: 12px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  background: #ffffff;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.3s;
+  min-width: 150px;
+
+  &:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  &:hover {
+    border-color: #d1d5db;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+}
+
+// Dropdown
+.dropdown {
+  position: relative;
+}
+
+.filterBtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 150px;
+  padding: 12px 16px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+
+  i {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    transition: transform 0.3s;
+
+    &.rotate {
+      transform: rotate(180deg);
+    }
+  }
+
+  &:hover {
+    border-color: #d1d5db;
+    background: #f9fafb;
+  }
+}
+
+.filterDropdownMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 100%;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  z-index: 100;
+  animation: slideDown 0.2s ease;
+}
+
+.filterDropdownItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+
+  i {
+    font-size: 1rem;
+    color: #667eea;
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: #f3f4f6;
+    color: #1f2937;
+  }
+
+  &.active {
+    background: #f0f2ff;
+    color: #667eea;
+    font-weight: 600;
+  }
+}
+
+.toolsBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+
+  i.bi-chevron-down {
+    font-size: 0.75rem;
+    transition: transform 0.3s;
+
+    &.rotate {
+      transform: rotate(180deg);
+    }
+  }
+
+  &:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+  }
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 250px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  z-index: 100;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+
+  i {
+    font-size: 1rem;
+    color: #667eea;
+  }
+
+  &:hover {
+    background: #f3f4f6;
+    color: #1f2937;
+  }
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  white-space: nowrap;
+
+  i {
+    font-size: 1rem;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Results Info
+.resultsInfo {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+// Table
+.tableWrapper {
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f3f4f6;
+  animation: fadeInUp 0.7s ease;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+
+  thead {
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+
+    th {
+      padding: 16px 20px;
+      text-align: left;
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #374151;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid #f3f4f6;
+      transition: all 0.2s;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:hover {
+        background: #f9fafb;
+      }
+
+      td {
+        padding: 16px 20px;
+        font-size: 0.9rem;
+        color: #374151;
+        vertical-align: middle;
+      }
+    }
+  }
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e5e7eb;
+}
+
+.nameCell {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+// Badges
+.roleBadge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.roleAdmin {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.roleInstructor {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.roleUser {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.statusActive {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusInactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+// Action Buttons
+.actionBtns {
+  display: flex;
+  gap: 8px;
+}
+
+.actionBtn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #667eea;
+
+  i {
+    font-size: 1rem;
+  }
+
+  &:hover {
+    background: #667eea;
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  }
+
+  &.dangerBtn {
+    color: #dc2626;
+
+    &:hover {
+      background: #dc2626;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+    }
+  }
+}
+
+// Empty State
+.emptyState {
+  text-align: center;
+  padding: 40px 20px !important;
+  color: #9ca3af;
+
+  i {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  p {
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0;
+  }
+}
+
+// Pagination
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  animation: fadeInUp 0.8s ease;
+}
+
+.paginationBtn {
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #667eea;
+    color: #ffffff;
+    border-color: #667eea;
+  }
+
+  &.active {
+    background: #667eea;
+    color: #ffffff;
+    border-color: #667eea;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.paginationDots {
+  padding: 0 8px;
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+// Animations
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive
+@media (max-width: 1200px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters {
+    width: 100%;
+  }
+
+  .actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 768px) {
+  .accounts {
+    padding: 20px;
+  }
+
+  .title {
+    font-size: 1.75rem;
+  }
+
+  .filters {
+    flex-direction: column;
+  }
+
+  .searchBox {
+    min-width: 100%;
+  }
+
+  .filterSelect {
+    width: 100%;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .toolsBtn,
+  .addBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tableWrapper {
+    overflow-x: auto;
+  }
+
+  .table {
+    min-width: 800px;
+  }
+}
+
+@media (max-width: 480px) {
+  .accounts {
+    padding: 16px;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .table {
+    font-size: 0.85rem;
+
+    thead th,
+    tbody td {
+      padding: 12px 16px;
+    }
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+  }
+}
+</style>

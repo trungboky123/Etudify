@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using AutoMapper;
 using back_end.Components;
 using back_end.Dto.Request;
 using back_end.Dto.Response;
@@ -22,8 +23,9 @@ public class UserService : IUserService
     private readonly BackgroundTaskQueue _taskQueue;
     private readonly MailSender _mailSender;
     private readonly IUserRepository _userRepository;
+    private readonly IMapper _mapper;
 
-    public UserService(UserManager<User> userManager, RegisterValidator registerValidator, UpdateUserValidator updateUserValidator, CloudinaryService cloudinaryService, IStringLocalizer<Messages> localizer, BackgroundTaskQueue taskQueue, MailSender mailSender, IUserRepository userRepository)
+    public UserService(UserManager<User> userManager, RegisterValidator registerValidator, UpdateUserValidator updateUserValidator, CloudinaryService cloudinaryService, IStringLocalizer<Messages> localizer, BackgroundTaskQueue taskQueue, MailSender mailSender, IUserRepository userRepository, IMapper mapper)
     {
         _userManager = userManager;
         _registerValidator = registerValidator;
@@ -33,6 +35,7 @@ public class UserService : IUserService
         _taskQueue = taskQueue;
         _mailSender = mailSender;
         _userRepository = userRepository;
+        _mapper = mapper;
     }
     
     public async Task<IdentityResult> RegisterAsync(RegisterRequest request)
@@ -117,7 +120,7 @@ public class UserService : IUserService
         return IdentityResult.Success;
     }
 
-    public async Task UpdateMe(string? userId, UpdateUserRequest request, IFormFile? avatar)
+    public async Task UpdateMe(string? userId, UpdateUserRequest request)
     {
         var validate = _updateUserValidator.Validate(request);
         if (!validate.IsValid)
@@ -171,9 +174,9 @@ public class UserService : IUserService
             updated = true;
         }
 
-        if (avatar != null && avatar.Length > 0)
+        if (request.Avatar != null && request.Avatar.Length > 0)
         {
-            string avatarUrl = await _cloudinaryService.UploadUserAvatar(avatar, userId);
+            string avatarUrl = await _cloudinaryService.UploadUserAvatar(request.Avatar, userId);
             user.AvatarUrl = avatarUrl;
             updated = true;
         }
@@ -185,5 +188,39 @@ public class UserService : IUserService
     public async Task<int> GetTotalUsers()
     {
         return await _userRepository.TotalUsers();
+    }
+
+    public async Task<List<UserResponse>> GetRecentUsers()
+    {
+        var users = await _userRepository.GetRecentUsers();
+        return _mapper.Map<List<UserResponse>>(users);
+    }
+
+    public async Task<List<UserResponse>> GetAllUsers(int? roleId, string? keyword, bool? status)
+    {
+        var users = await  _userRepository.GetAllUsers(roleId, keyword, status);
+        var responses = new List<UserResponse>();
+
+        foreach (var user in users)
+        {
+            var response = _mapper.Map<UserResponse>(user);
+            var roles = await _userManager.GetRolesAsync(user);
+            response.Role = roles.FirstOrDefault();
+            responses.Add(response);
+        }
+
+        return responses;
+    }
+
+    public async Task ToggleStatus(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            throw new ApiExceptionResponse(_localizer["UserNotFound"]);
+        }
+        
+        user.Status = !user.Status;
+        await _userManager.UpdateAsync(user);
     }
 }

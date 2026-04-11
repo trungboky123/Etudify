@@ -17,7 +17,6 @@
 
   "admin.sidebar.accounts": "Tài khoản",
   "admin.sidebar.courses": "Khóa học",
-  "admin.sidebar.classes": "Lớp học",
   "admin.sidebar.categories": "Danh mục",
   "admin.sidebar.posters": "Bài đăng",
 
@@ -30,7 +29,7 @@
   "admin.dashboard.revenueOverview": "Tổng quan doanh thu",
   "admin.dashboard.revenueSubtitle": "Doanh thu hàng tháng của năm",
   "admin.dashboard.topCourses": "3 khóa học bán chạy nhất",
-  "admin.dashboard.topClasses": "3 lớp học bán chạy nhất",
+  "admin.dashboard.recentUsers": "3 người dùng đăng ký gần đây",
   "admin.dashboard.sold": "đã bán",
 
   "admin.accounts.title": "Danh sách tài khoản",

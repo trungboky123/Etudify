@@ -11,9 +11,9 @@ import i18n from './i18n'
 import { useAuthStore } from './stores/auth';
 const app = createApp(App)
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to) => {
   document.title = to.meta.title || 'Etudify';
-  next();
+  return true;
 })
 
 app.use(createPinia())

@@ -127,7 +127,6 @@ C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\back_end.Assemb
 C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\back_end.csproj.CoreCompileInputs.cache
 C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\back_end.MvcApplicationPartsAssemblyInfo.cs
 C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\back_end.MvcApplicationPartsAssemblyInfo.cache
-C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\en\back_end.resources.cs
 C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\en\back_end.resources.dll
 C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\staticwebassets.build.json
 C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\staticwebassets.development.json
@@ -147,9 +146,7 @@ C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\back_end.Resour
 C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\back_end.Resources.Messages.vi.resources
 C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\bin\Debug\net8.0\fr\back_end.resources.dll
 C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\bin\Debug\net8.0\vi\back_end.resources.dll
-C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\fr\back_end.resources.cs
 C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\fr\back_end.resources.dll
-C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\vi\back_end.resources.cs
 C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\vi\back_end.resources.dll
 C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\back_end.RazorAssemblyInfo.cache
 C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\back_end.RazorAssemblyInfo.cs
@@ -457,3 +454,15 @@ C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\bin\Debug\net8.0\refs\System.Xml
 C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\bin\Debug\net8.0\refs\System.Xml.XPath.dll
 C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\bin\Debug\net8.0\refs\System.Xml.XPath.XDocument.dll
 C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\bin\Debug\net8.0\refs\WindowsBase.dll
+C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\back_end.sourcelink.json
+C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\bin\Debug\net8.0\ClosedXML.dll
+C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\bin\Debug\net8.0\ClosedXML.Parser.dll
+C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\bin\Debug\net8.0\DocumentFormat.OpenXml.dll
+C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\bin\Debug\net8.0\DocumentFormat.OpenXml.Framework.dll
+C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\bin\Debug\net8.0\ExcelNumberFormat.dll
+C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\bin\Debug\net8.0\RBush.dll
+C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\bin\Debug\net8.0\SixLabors.Fonts.dll
+C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\bin\Debug\net8.0\System.IO.Packaging.dll
+C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\en\back_end.resources.cs
+C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\fr\back_end.resources.cs
+C:\Users\Asus\OneDrive\Desktop\Etudify\back_end\obj\Debug\net8.0\vi\back_end.resources.cs

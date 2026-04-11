@@ -22,4 +22,12 @@ public class CourseController : ControllerBase
         var courses = await _courseService.GetLastestCourse();
         return Ok(courses);
     }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("total")]
+    public async Task<IActionResult> GetTotalCourses()
+    {
+        var count =  await _courseService.GetTotalCourses();
+        return Ok(new { totalCourses = count });
+    }
 }

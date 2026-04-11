@@ -29,4 +29,9 @@ public class CourseService : ICourseService
             return response;
         }).ToList();
     }
+
+    public async Task<int> GetTotalCourses()
+    {
+        return await _courseRepository.GetTotalCoursesAsync();
+    }
 }

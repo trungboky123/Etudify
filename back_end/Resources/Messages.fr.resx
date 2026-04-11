@@ -103,4 +103,7 @@
     <data name="EmailNotVerified" xml:space="preserve">
         <value>Votre adresse e-mail n'a pas été vérifiée! Veuillez la vérifier</value>
     </data>
+    <data name="UserNotFound" xml:space="preserve">
+        <value>Utilisateur introuvable!</value>
+    </data>
 </root>

@@ -22,4 +22,9 @@ public class CourseRepository : ICourseRepository
             .Take(8)
             .ToListAsync();
     }
+
+    public async Task<int> GetTotalCoursesAsync()
+    {
+        return await _context.Courses.CountAsync();
+    }
 }

@@ -78,7 +78,7 @@ builder.Services.AddIdentity<User, IdentityRole>().AddEntityFrameworkStores<AppD
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
-builder.Services.AddScoped<IPaymentRepository, PaymentRepsitory>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 
 // Service
 builder.Services.AddScoped<IUserService, UserService>();
@@ -153,6 +153,10 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateUserValidator>();
 
+// Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 // CORS
 builder.Services.AddCors(options =>
 {
@@ -199,5 +203,7 @@ app.UseCors("AllowFrontend");
 app.UseRequestLocalization();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseSwagger();
+app.UseSwaggerUI();
 app.MapControllers();
 app.Run();

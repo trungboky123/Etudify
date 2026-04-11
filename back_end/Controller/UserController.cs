@@ -1,14 +1,15 @@
 ﻿using System.Security.Claims;
 using System.Text;
-using back_end.Components;
 using back_end.Dto.Request;
 using back_end.Dto.Response;
 using back_end.Entity;
 using back_end.Service.Interfaces;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
 namespace back_end.Controller;
@@ -20,12 +21,14 @@ public class UserController : ControllerBase
     private readonly IUserService _userService;
     private readonly IStringLocalizer<Messages> _localizer;
     private readonly UserManager<User> _userManager;
+    private readonly RoleManager<IdentityRole> _roleManager;
 
-    public UserController(IUserService userService, IStringLocalizer<Messages> localizer, UserManager<User> userManager)
+    public UserController(IUserService userService, IStringLocalizer<Messages> localizer, UserManager<User> userManager, RoleManager<IdentityRole> roleManager)
     {
         _userService = userService;
         _localizer = localizer;
         _userManager = userManager;
+        _roleManager = roleManager;
     }
     
     [Authorize]
@@ -56,10 +59,10 @@ public class UserController : ControllerBase
     [Authorize]
     [HttpPatch("me")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UpdateMe([FromForm] UpdateUserRequest request, [FromForm] IFormFile? avatar)
+    public async Task<IActionResult> UpdateMe([FromForm] UpdateUserRequest request)
     {
         string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        await _userService.UpdateMe(userId, request, avatar);
+        await _userService.UpdateMe(userId, request);
 
         return Ok(new { message = _localizer["UpdateSuccess"] });
     }
@@ -119,5 +122,37 @@ public class UserController : ControllerBase
     {
         var totalUsers = await _userService.GetTotalUsers();
         return Ok(new { totalUsers = totalUsers });
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("recent")]
+    public async Task<IActionResult> GetRecentUsers()
+    {
+        var users = await _userService.GetRecentUsers();
+        return Ok(users);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("all")]
+    public async Task<IActionResult> GetAllUsers([FromQuery] int? roleId, [FromQuery] string? keyword, [FromQuery] bool? status)
+    {
+        var responses = await _userService.GetAllUsers(roleId, keyword, status);
+        return Ok(responses);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("roles")]
+    public async Task<IActionResult> GetAllRoles()
+    {
+        var roles = await _roleManager.Roles.ToListAsync();
+        return Ok(roles);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPut("status/{userId}")]
+    public async Task<IActionResult> ToggleStatus([FromRoute] string userId)
+    {
+        await _userService.ToggleStatus(userId);
+        return Ok();
     }
 }

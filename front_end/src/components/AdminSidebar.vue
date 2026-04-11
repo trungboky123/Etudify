@@ -1,42 +1,45 @@
 <script setup>
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router';
 
 const { t } = useI18n()
 const { sidebarCollapsed } = defineProps({
   sidebarCollapsed: Boolean,
 })
+const route = useRoute();
 const emit = defineEmits(['collapse'])
 
-const menuItems = [
+const menuItems = computed(() => [
   {
     path: '/admin/dashboard',
     icon: 'bi-graph-up-arrow',
     label: 'Dashboard',
   },
   {
-    path: '/admin/account-list',
+    path: '/admin/accounts',
     icon: 'bi-people-fill',
     label: t('admin.sidebar.accounts'),
   },
   {
-    path: '/admin/course-list',
+    path: '/admin/courses',
     icon: 'bi-book-fill',
     label: t('admin.sidebar.courses'),
   },
   {
-    path: '/admin/category-list',
+    path: '/admin/categories',
     icon: 'bi-tags-fill',
     label: t('admin.sidebar.categories'),
   },
   {
-    path: '/admin/poster-list',
+    path: '/admin/posts',
     icon: 'bi-file-earmark-text-fill',
     label: t('admin.sidebar.posters'),
   },
-]
+])
 
 const isActive = (path) => {
-  return location.pathname === path
+  return route.path.startsWith(path);
 }
 </script>
 
@@ -54,7 +57,11 @@ const isActive = (path) => {
     <nav class="nav">
       <ul class="menu">
         <li v-for="item in menuItems" :key="item.path" class="menuItem">
-          <RouterLink :to="item.path" :class="{'menuLink': true, 'active': isActive(item.path)}" :title="sidebarCollapsed ? item.label : ''">
+          <RouterLink
+            :to="item.path"
+            :class="{ menuLink: true, active: isActive(item.path) }"
+            :title="sidebarCollapsed ? item.label : ''"
+          >
             <i :class="['bi', item.icon, 'icon']"></i>
             <span v-if="!sidebarCollapsed" class="label">{{ item.label }}</span>
           </RouterLink>

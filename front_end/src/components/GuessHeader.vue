@@ -151,7 +151,7 @@ const currentLang = computed(() => {
             </button>
 
             <div v-if="userOpen" class="hd-menu user-menu">
-              <RouterLink class="hd-item" to="/profile" @click="() => (userOpen = false)">
+              <RouterLink class="hd-item" :to="`/profile/${auth.user?.id}`" @click="() => (userOpen = false)">
                 <i class="bi bi-person"></i>
                 {{ t('nav.profile') }}
               </RouterLink>

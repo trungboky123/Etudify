@@ -102,4 +102,7 @@
     <data name="EmailNotVerified" xml:space="preserve">
         <value>Your email has not been verified! Please verify your email</value>
     </data>
+    <data name="UserNotFound" xml:space="preserve">
+        <value>User not found!</value>
+    </data>
 </root>

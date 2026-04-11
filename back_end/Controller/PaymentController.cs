@@ -19,7 +19,23 @@ public class PaymentController : ControllerBase
     [HttpGet("total-revenue")]
     public async Task<IActionResult> GetTotalRevenue()
     {
-        decimal totalRevenue = await _paymentService.TotalRevenue();
+        var totalRevenue = await _paymentService.TotalRevenue();
         return Ok(new { totalRevenue = totalRevenue });
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("monthly-revenue")]
+    public async Task<IActionResult> GetMonthlyRevenue()
+    {
+        var responses = await _paymentService.GetMonthlyRevenue();
+        return Ok(responses);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("top-courses")]
+    public async Task<IActionResult> GetTopSoldCourses()
+    {
+        var responses = await _paymentService.GetTopSoldCourses();
+        return Ok(responses);
     }
 }

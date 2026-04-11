@@ -102,4 +102,7 @@
     <data name="EmailNotVerified" xml:space="preserve">
         <value>Email của bạn chưa được xác thực! Hãy xác thực email của bạn trước</value>
     </data>
+    <data name="UserNotFound" xml:space="preserve">
+        <value>Tài khoản không tồn tại!</value>
+    </data>
 </root>

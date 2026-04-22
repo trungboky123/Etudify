@@ -40,4 +40,28 @@ public class CloudinaryService
 
         return result.SecureUrl.ToString();
     }
+
+    public async Task<string> UploadCourseThumbnail(IFormFile file, int courseId)
+    {
+        if (file == null || file.Length == 0) return null;
+        
+        var publicId = $"course_{courseId}";
+        await using var stream = file.OpenReadStream();
+        
+        var uploadParams = new ImageUploadParams
+        {
+            File = new FileDescription(file.FileName, stream),
+            PublicId = publicId,
+            Overwrite = true,
+            Folder = "course_thumbnail"
+        };
+        
+        var result = await _cloudinary.UploadAsync(uploadParams);
+        if (result.StatusCode != System.Net.HttpStatusCode.OK)
+        {
+            throw new Exception("Upload thumbnail failed!");
+        }
+
+        return result.SecureUrl.ToString();
+    }
 }

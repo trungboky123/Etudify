@@ -55,4 +55,16 @@ public class UserRepository : IUserRepository
         var users = await query.ToListAsync();
         return users;
     }
+
+    public async Task<bool> UsernameExists(string username)
+    {
+        return await _context.Users
+            .AnyAsync(x => x.UserName == username);
+    }
+
+    public async Task<bool> EmailExists(string email)
+    {
+        return await _context.Users
+            .AnyAsync(x => x.Email == email);
+    }
 }

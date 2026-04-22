@@ -11,5 +11,6 @@ public class AutoMapping : Profile
         CreateMap<Category, CategoryResponse>();
         CreateMap<Course, CourseResponse>();
         CreateMap<User, UserResponse>();
+        CreateMap<Lesson, LessonResponse>();
     }
 }

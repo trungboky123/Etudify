@@ -1,9 +1,9 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
-import axios from 'axios'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import api from '@/api/api'
 
 const { t, locale } = useI18n()
 const { sidebarCollapsed } = defineProps({
@@ -11,11 +11,11 @@ const { sidebarCollapsed } = defineProps({
 })
 const router = useRouter()
 const auth = useAuthStore()
-const languages = [
+const languages = computed(() => [
   { code: 'vi', name: t('nav.lang.vietnam'), flag: '🇻🇳' },
   { code: 'en', name: t('nav.lang.english'), flag: '🇺🇸' },
   { code: 'fr', name: t('nav.lang.french'), flag: '🇫🇷' },
-]
+])
 const langOpen = ref(false)
 const userOpen = ref(false)
 const langRef = ref(null)
@@ -25,6 +25,11 @@ const handleChangeLanguage = (langcode) => {
   locale.value = langcode
   localStorage.setItem('lang', locale.value)
   langOpen.value = false
+}
+
+const handleProfile = () => {
+  userOpen.value = false
+  router.push(`/profile/${auth.user?.id}`)
 }
 
 const handleClickOutside = (e) => {
@@ -50,16 +55,20 @@ onUnmounted(() => {
 })
 
 const currentLang = computed(() => {
-  return languages.find((lang) => lang.code === locale.value) ?? languages[0]
+  return languages.value.find((lang) => lang.code === locale.value) ?? languages.value[0]
 })
 
 async function handleLogout() {
-  userOpen.value = false;
-  await axios.post('http://localhost:5062/auth/logout', {}, {
-    withCredentials: true
-  });
-  await auth.fetchUser();
-  router.push('/home');
+  userOpen.value = false
+  await api.post(
+    '/auth/logout',
+    {},
+    {
+      withCredentials: true,
+    },
+  )
+  await auth.fetchUser()
+  router.push('/home')
 }
 </script>
 
@@ -82,19 +91,15 @@ async function handleLogout() {
           </button>
 
           <div v-if="userOpen" class="dropdown">
-            <RouterLink
-              @click="userOpen = false"
-              :to="`/profile/${auth.user?.id}`"
-              class="dropdownItem"
-            >
+            <button @click="handleProfile" class="dropdownItem">
               <i class="bi bi-person"></i>
               <span>{{ t('nav.profile') }}</span>
-            </RouterLink>
+            </button>
             <div class="dropdownDivider"></div>
-            <RouterLink @click="handleLogout" class="dropdownItem">
+            <button @click="handleLogout" class="dropdownItem">
               <i class="bi bi-box-arrow-right"></i>
               <span>{{ t('nav.logout') }}</span>
-            </RouterLink>
+            </button>
           </div>
         </div>
 
@@ -106,7 +111,12 @@ async function handleLogout() {
           </button>
 
           <div v-if="langOpen" class="langDropdown">
-            <button v-for="lang in languages" :key="lang.code" :class="{'langItem': true, 'langItemActive': locale === lang.code}" @click="handleChangeLanguage(lang.code)">
+            <button
+              v-for="lang in languages"
+              :key="lang.code"
+              :class="{ langItem: true, langItemActive: locale === lang.code }"
+              @click="handleChangeLanguage(lang.code)"
+            >
               <span class="langFlag">{{ lang.flag }}</span>
               <span class="langItemName">{{ lang.name }}</span>
               <i v-if="locale === lang.code" class="bi bi-check-lg"></i>

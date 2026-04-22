@@ -43,4 +43,27 @@ public class MailSender
         await client.SendAsync(mailMessage);
         await client.DisconnectAsync(true);
     }
+    
+    public async Task SendResetPasswordAsync(string toEmail, string username, string link)
+    {
+        var html = await _razorService.RenderAsync("Email/ResetPassword.cshtml", new
+        {
+            Username = username,
+            Link = link
+        });
+        var mailMessage = new MimeMessage();
+        mailMessage.From.Add(new MailboxAddress("Étudify", _smtpUser));
+        mailMessage.To.Add(new MailboxAddress("", toEmail));
+        mailMessage.Subject = "Setting up your account!";
+        mailMessage.Body = new TextPart("html")
+        {
+            Text = html
+        };
+
+        using var client = new SmtpClient();
+        await client.ConnectAsync(_smtpHost, _smtpPort, SecureSocketOptions.StartTls);
+        await client.AuthenticateAsync(_smtpUser, _smtpPass);
+        await client.SendAsync(mailMessage);
+        await client.DisconnectAsync(true);
+    }
 }

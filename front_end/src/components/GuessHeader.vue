@@ -4,18 +4,18 @@ import logo from '../images/logo.png'
 import defaultAvatar from '../images/default-avatar.png'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import axios from 'axios'
+import api from '@/api/api'
 import { useAuthStore } from '@/stores/auth'
 
 const { t, locale } = useI18n()
 const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
-const languages = [
+const languages = computed(() => [
   { code: 'vi', name: t('nav.lang.vietnam'), flag: '🇻🇳' },
   { code: 'en', name: t('nav.lang.english'), flag: '🇺🇸' },
   { code: 'fr', name: t('nav.lang.french'), flag: '🇫🇷' },
-]
+])
 const langOpen = ref(false)
 const userOpen = ref(false)
 const langRef = ref(null)
@@ -29,7 +29,7 @@ const handleChangeLanguage = (langcode) => {
 
 async function handleLogout() {
   userOpen.value = false;
-  await axios.post('http://localhost:5062/auth/logout', {}, {
+  await api.post('/auth/logout', {}, {
     withCredentials: true
   });
   await auth.fetchUser();
@@ -63,7 +63,7 @@ const isActive = (path) => {
 }
 
 const currentLang = computed(() => {
-  return languages.find((lang) => lang.code === locale.value) ?? languages[0]
+  return languages.value.find((lang) => lang.code === locale.value) ?? languages.value[0]
 })
 </script>
 

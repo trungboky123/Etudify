@@ -9,8 +9,10 @@ public class RazorService
 
     public RazorService()
     {
+        var templatePath = Path.Combine(AppContext.BaseDirectory, "Templates");
+
         _engine = new RazorLightEngineBuilder()
-            .UseFileSystemProject(Directory.GetCurrentDirectory() + "/Templates")
+            .UseFileSystemProject(templatePath)
             .UseMemoryCachingProvider()
             .SetOperatingAssembly(Assembly.GetExecutingAssembly())
             .Build();

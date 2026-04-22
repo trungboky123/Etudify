@@ -12,7 +12,7 @@ import {
 } from 'chart.js'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import authAxios from '@/function/authAxios'
+import api from '@/api/api'
 import { Line } from 'vue-chartjs'
 
 ChartJS.register(
@@ -141,32 +141,32 @@ const revenueChartOptions = {
 }
 
 const getTotalUsers = async () => {
-  const res = await authAxios.get('/users/total')
+  const res = await api.get('/users/total')
   stats.value.totalUsers = res.data?.totalUsers
 }
 
 const getTotalCourses = async () => {
-  const res = await authAxios.get('/courses/total')
+  const res = await api.get('/courses/total')
   stats.value.totalCourses = res.data?.totalCourses
 }
 
 const getTotalRevenue = async () => {
-  const res = await authAxios.get('/payments/total-revenue')
+  const res = await api.get('/payments/total-revenue')
   stats.value.totalRevenue = res.data?.totalRevenue
 }
 
 const getMonthlyRevenue = async () => {
-  const res = await authAxios.get('/payments/monthly-revenue')
+  const res = await api.get('/payments/monthly-revenue')
   monthlyRevenue.value = res.data.map((item) => Number(item.revenue))
 }
 
 const topSoldCourses = async () => {
-  const res = await authAxios.get('/payments/top-courses')
+  const res = await api.get('/payments/top-courses')
   topCourses.value = res.data
 }
 
 const getRecentUsers = async () => {
-  const res = await authAxios.get('/users/recent')
+  const res = await api.get('/users/recent')
   recentUsers.value = res.data
 }
 
@@ -287,8 +287,6 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
 .dashboard {
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%);

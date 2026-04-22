@@ -1,5 +1,6 @@
 ﻿using back_end.Database;
 using back_end.Dto.Response;
+using back_end.Entity;
 using back_end.Repository.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -67,5 +68,11 @@ public class PaymentRepository : IPaymentRepository
             .OrderByDescending(x => x.TotalSold)
             .Take(3)
             .ToListAsync();
+    }
+
+    public async Task<Payment?> GetByOrderCodeAsync(long orderCode)
+    {
+        return await _context.Payments
+            .FirstOrDefaultAsync(p => p.OrderCode == orderCode);
     }
 }

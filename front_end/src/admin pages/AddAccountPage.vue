@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import authAxios from '@/function/authAxios'
+import api from '@/api/api'
 
 const { t } = useI18n()
 const { sidebarCollapsed } = defineProps({
@@ -19,7 +19,6 @@ const user = ref({
   email: '',
   username: '',
   roleId: '',
-  avatarUrl: '',
   status: true,
 })
 const roleName = computed(() => {
@@ -57,7 +56,7 @@ const handleRemoveAvatar = () => {
 }
 
 const getAllRoles = async () => {
-  const res = await authAxios.get('/users/roles')
+  const res = await api.get('/users/roles')
   roles.value = res.data
 }
 
@@ -70,6 +69,46 @@ const roleBadge = computed(() => {
   const role = roles.value.find((r) => r.id === user.value.roleId)
   return role ? `badge${role.name}` : ''
 })
+
+const handleSubmit = async () => {
+  const formData = new FormData()
+  formData.append('fullName', user.value.fullName)
+  formData.append('email', user.value.email)
+  formData.append('username', user.value.username)
+  formData.append('roleId', user.value.roleId)
+  formData.append('status', user.value.status)
+  if (avatarFile.value) {
+    formData.append('avatar', avatarFile.value)
+  }
+
+  isSaving.value = true
+  message.value = ''
+  const lang = localStorage.getItem('lang') || 'en'
+  let res = null
+  try {
+    res = await api.post('/users/add', formData, {
+      headers: {
+        'Accept-Language': lang,
+      },
+    })
+  } catch (error) {
+    message.value = error.response?.data?.message
+    isError.value = true
+    return
+  } finally {
+    isSaving.value = false
+  }
+
+  message.value = res.data?.message?.value
+  isError.value = false
+
+  let timer = null
+  if (timer) clearTimeout(timer)
+
+  timer = setTimeout(() => {
+    router.push('/admin/accounts')
+  }, 2000)
+}
 
 onMounted(() => {
   getAllRoles()
@@ -117,12 +156,7 @@ onUnmounted(() => {
               <div class="avatarWrapper">
                 <div class="avatarPreview" @click="handleAvatarClick">
                   <img v-if="previewAvatar" :src="previewAvatar" alt="Avatar" class="avatarImg" />
-                  <img
-                    v-else
-                    :src="defaultAvatar"
-                    alt="Avatar"
-                    class="avatarImg"
-                  />
+                  <img v-else :src="defaultAvatar" alt="Avatar" class="avatarImg" />
                   <div class="avatarOverlay">
                     <i class="bi bi-camera"></i>
                     <span>{{ t('admin.addAccount.change') }}</span>
@@ -345,8 +379,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
 // Layout
 .layout {
   display: flex;
@@ -1057,6 +1089,7 @@ onUnmounted(() => {
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 
   i {
+    display: inline-block;
     font-size: 1rem;
   }
 

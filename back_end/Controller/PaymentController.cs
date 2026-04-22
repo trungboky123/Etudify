@@ -1,11 +1,13 @@
-﻿using back_end.Service.Interfaces;
+﻿using System.Security.Claims;
+using back_end.Dto.Request;
+using back_end.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace back_end.Controller;
 
 [ApiController]
-[Route("/payments")]
+[Route("/api/payments")]
 public class PaymentController : ControllerBase
 {
     private readonly IPaymentService _paymentService;
@@ -37,5 +39,22 @@ public class PaymentController : ControllerBase
     {
         var responses = await _paymentService.GetTopSoldCourses();
         return Ok(responses);
+    }
+
+    [Authorize]
+    [HttpPost("create")]
+    public async Task<IActionResult> CreatePayment([FromBody] PaymentRequest request)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var qr = await _paymentService.CreatePayment(userId, request);
+        return Ok(qr);
+    }
+
+    [Authorize]
+    [HttpGet("status")]
+    public async Task<IActionResult> GetStatus([FromQuery] long orderCode)
+    {
+        var result = await _paymentService.GetPaymentStatus(orderCode);
+        return Ok(result);
     }
 }

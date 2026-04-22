@@ -10,4 +10,6 @@ public class User : IdentityUser
     public ICollection<Course> Courses = new List<Course>();
     public ICollection<RefreshToken> RefreshTokens = new List<RefreshToken>();
     public ICollection<Payment> Payments = new List<Payment>();
+    public ICollection<Wishlist> Wishlists = new List<Wishlist>();
+    public ICollection<Enrollment> Enrollments = new List<Enrollment>();
 }

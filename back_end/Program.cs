@@ -12,10 +12,11 @@ using back_end.Validator;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Slugify;
 
@@ -30,6 +31,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Razor
 builder.Services.AddSingleton<RazorService>();
+
+// XSS
+builder.Services.AddSingleton<HtmlService>();
+
+// SignalR
+builder.Services.AddSignalR();
 
 // Email Token
 builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
@@ -69,6 +76,10 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     options.SetDefaultCulture("en")
         .AddSupportedCultures(supportedCultures)
         .AddSupportedUICultures(supportedCultures);
+    options.RequestCultureProviders = new List<IRequestCultureProvider>
+    {
+        new AcceptLanguageHeaderRequestCultureProvider()
+    };
 });
 
 // Identity
@@ -79,12 +90,24 @@ builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<ILessonRepository, LessonRepository>();
+builder.Services.AddScoped<IWishlistRepository, WishlistRepository>();
+builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
 
 // Service
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<ILessonService, LessonService>();
+builder.Services.AddScoped<IWishlistService, WishlistService>();
+builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
+
+// PayOS
+builder.Services.AddScoped<PayOsService>();
+builder.Services.AddHttpClient<PayOsService>();
 
 // Jwt
 builder.Services.AddScoped<JwtService>();
@@ -139,19 +162,22 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 // Controller
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.SuppressModelStateInvalidFilter = true;
+    });
 
 // Fluent Validation
-builder.Services.AddFluentValidationAutoValidation(config =>
-{
-    config.DisableDataAnnotationsValidation = true;
-});
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.SuppressModelStateInvalidFilter = true;
 });
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateUserValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<AddAccountValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<ResetPasswordValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<AddCourseValidator>();
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -163,7 +189,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173")
+            policy.WithOrigins("http://localhost:5173", "http://localhost:8080")
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials();
@@ -171,6 +197,11 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
@@ -199,11 +230,17 @@ app.UseExceptionHandler(errorApp =>
         }
     });
 });
+app.UseRouting();
 app.UseCors("AllowFrontend");
-app.UseRequestLocalization();
+var localizationOptions = app.Services
+    .GetRequiredService<IOptions<RequestLocalizationOptions>>()
+    .Value;
+
+app.UseRequestLocalization(localizationOptions);
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.MapControllers();
+app.MapHub<CourseHub>("/course-hub");
 app.Run();

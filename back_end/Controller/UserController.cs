@@ -4,7 +4,6 @@ using back_end.Dto.Request;
 using back_end.Dto.Response;
 using back_end.Entity;
 using back_end.Service.Interfaces;
-using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +14,7 @@ using Microsoft.Extensions.Localization;
 namespace back_end.Controller;
 
 [ApiController]
-[Route("/users")]
+[Route("/api/users")]
 public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
@@ -111,9 +110,9 @@ public class UserController : ControllerBase
         var result = await _userManager.ChangeEmailAsync(user, email, decoded);
         if (!result.Succeeded)
         {
-            return Redirect($"http://localhost:5173/verify-email?token={token}&status=false");
+            return Redirect($"https://lackadaisical-estrual-spencer.ngrok-free.dev/verify-email?token={token}&status=false");
         }
-        return Redirect($"http://localhost:5173/verify-email?token={token}&status=true");
+        return Redirect($"https://lackadaisical-estrual-spencer.ngrok-free.dev/verify-email?token={token}&status=true");
     }
 
     [Authorize(Roles = "Admin")]
@@ -154,5 +153,22 @@ public class UserController : ControllerBase
     {
         await _userService.ToggleStatus(userId);
         return Ok();
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPost("add")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> AddAccount([FromForm] AddAccountRequest request)
+    {
+        await _userService.CreateAccount(request);
+        return Ok(new { message = _localizer["CreateSuccess"] });
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("instructors/all")]
+    public async Task<IActionResult> GetAllInstructors()
+    {
+        var result = await _userService.GetAllInstructors();
+        return Ok(result);
     }
 }

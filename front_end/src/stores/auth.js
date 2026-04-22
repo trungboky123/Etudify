@@ -1,7 +1,7 @@
 import {
   defineStore
 } from "pinia";
-import authAxios from '@/function/authAxios'
+import api from '@/api/api'
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
@@ -17,7 +17,7 @@ export const useAuthStore = defineStore("auth", {
   actions: {
     async fetchUser() {
       try {
-        const res = await authAxios.get("/users/me");
+        const res = await api.get("/users/me");
         this.user = res.data;
       } catch (error) {
         this.user = null;
@@ -27,4 +27,3 @@ export const useAuthStore = defineStore("auth", {
     }
   }
 })
-

@@ -13,6 +13,13 @@ public class BackgroundTaskQueue
 
     public async Task<Func<Task>> DequeueAsync(CancellationToken token)
     {
-        return await _queue.Reader.ReadAsync(token);
+        try
+        {
+            return await _queue.Reader.ReadAsync(token);
+        }
+        catch (OperationCanceledException)
+        {
+            return () => Task.CompletedTask;
+        }
     }
 }

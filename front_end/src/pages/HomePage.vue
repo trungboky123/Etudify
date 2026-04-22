@@ -1,6 +1,6 @@
 <script setup>
 import GuessFooter from '@/components/GuessFooter.vue'
-import axios from 'axios'
+import api from '@/api/api'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -15,7 +15,7 @@ const formatPrice = (price) => {
 
 const fetchCourses = async () => {
   try {
-    const res = await axios.get('http://localhost:5062/courses/latest')
+    const res = await api.get('/courses/latest')
     const data = res.data
     courses.value = data
     console.log(courses.value)
@@ -128,7 +128,7 @@ const handleNextSlide = () => {
           >
             <div class="course-info">
               <div class="course-name">{{ course.name }}</div>
-              <div v-if="course.salePrice !== null && course.salePrice < course.listedPrice" class="course-price">
+              <div v-if="course.salePrice !== null" class="course-price">
                 <span class="price-original">{{ formatPrice(course.listedPrice) }}</span>
                 <span class="price-sale">{{ formatPrice(course.salePrice) }}</span>
               </div>

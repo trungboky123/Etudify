@@ -18,6 +18,10 @@ build_property.GenerateRazorMetadataSourceChecksumAttributes =
 build_property.MSBuildProjectDirectory = C:\Users\Asus\OneDrive\Desktop\Etudify\back_end
 build_property._RazorSourceGeneratorDebug = 
 
+[C:/Users/Asus/OneDrive/Desktop/Etudify/back_end/Templates/Email/ResetPassword.cshtml]
+build_metadata.AdditionalFiles.TargetPath = VGVtcGxhdGVzXEVtYWlsXFJlc2V0UGFzc3dvcmQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/Asus/OneDrive/Desktop/Etudify/back_end/Templates/Email/VerifyEmail.cshtml]
 build_metadata.AdditionalFiles.TargetPath = VGVtcGxhdGVzXEVtYWlsXFZlcmlmeUVtYWlsLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 

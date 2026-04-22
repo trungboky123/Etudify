@@ -17,6 +17,7 @@ public class CourseRepository : ICourseRepository
     public async Task<List<Course>> GetLatestCoursesAsync()
     {
         return await _context.Courses
+            .Where(c => c.Status == true)
             .OrderByDescending(x => x.Id)
             .Include(x => x.Categories)
             .Take(8)
@@ -26,5 +27,28 @@ public class CourseRepository : ICourseRepository
     public async Task<int> GetTotalCoursesAsync()
     {
         return await _context.Courses.CountAsync();
+    }
+
+    public IQueryable<Course> GetAllCourses()
+    {
+        return _context.Courses
+            .Include(c => c.Categories)
+            .Include(c => c.Instructor);
+    }
+
+    public IQueryable<Course> GetPublicCourses()
+    {
+        return _context.Courses
+            .Include(c => c.Categories)
+            .Include(c => c.Instructor)
+            .Where(c => c.Status == true);
+    }
+
+    public async Task<Course?> GetCourseByIdAsync(int courseId)
+    {
+        return await _context.Courses   
+            .Include(c => c.Categories)
+            .Include(c => c.Instructor)
+            .FirstOrDefaultAsync(c => c.Id == courseId);
     }
 }

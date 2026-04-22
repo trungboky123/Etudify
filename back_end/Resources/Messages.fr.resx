@@ -73,18 +73,6 @@
     <data name="PasswordRequired" xml:space="preserve">
         <value>Le mot de passe est requis !</value>
     </data>
-    <data name="CodeInvalid" xml:space="preserve">
-        <value>Code invalide!</value>
-    </data>
-    <data name="CodeUsed" xml:space="preserve">
-        <value>Le code a été utilisé!</value>
-    </data>
-    <data name="CodeExpired" xml:space="preserve">
-        <value>Le code a expiré! Veuillez renvoyer un nouveau code.</value>
-    </data>
-    <data name="CodeIncorrect" xml:space="preserve">
-        <value>Code incorrect!</value>
-    </data>
     <data name="EmailExisted" xml:space="preserve">
         <value>Cette adresse e-mail existe déjà!</value>
     </data>
@@ -101,9 +89,51 @@
         <value>Le mot de passe actuel est incorrect!</value>
     </data>
     <data name="EmailNotVerified" xml:space="preserve">
-        <value>Votre adresse e-mail n'a pas été vérifiée! Veuillez la vérifier</value>
+        <value>Votre adresse e-mail n'a pas été vérifiée! Veuillez consulter votre boîte mail pour confirmation.</value>
     </data>
     <data name="UserNotFound" xml:space="preserve">
         <value>Utilisateur introuvable!</value>
+    </data>
+    <data name="RoleRequired" xml:space="preserve">
+        <value>Le rôle est requis!</value>
+    </data>
+    <data name="CreateSuccess" xml:space="preserve">
+        <value>Créé avec succès !</value>
+    </data>
+    <data name="ChangePasswordSuccess" xml:space="preserve">
+        <value>Le mot de passe a été modifié avec succès!</value>
+    </data>
+    <data name="CourseNotFound" xml:space="preserve">
+        <value>Cours introuvable!</value>
+    </data>
+    <data name="CourseNameRequired" xml:space="preserve">
+        <value>Le nom du cours est obligatoire!</value>
+    </data>
+    <data name="ListedPriceRequired" xml:space="preserve">
+        <value>Le prix indiqué est obligatoire!</value>
+    </data>
+    <data name="InstructorRequired" xml:space="preserve">
+        <value>Le instructeur est requis!</value>
+    </data>
+    <data name="CourseCreated" xml:space="preserve">
+        <value>Cours créé avec succès !</value>
+    </data>
+    <data name="CategoryRequired" xml:space="preserve">
+        <value>Sélectionnez au moins une catégorie!</value>
+    </data>
+    <data name="ListedPriceInvalid" xml:space="preserve">
+        <value>Prix ​​affiché invalide!</value>
+    </data>
+    <data name="SalePriceInvalid" xml:space="preserve">
+        <value>Prix ​​de vente invalide!</value>
+    </data>
+    <data name="PriceInvalid" xml:space="preserve">
+        <value>Le prix affiché doit être supérieur au prix de vente!</value>
+    </data>
+    <data name="WishlistExisted" xml:space="preserve">
+        <value>L'article a déjà existé dans la liste de souhaits!</value>
+    </data>
+    <data name="PaymentNotFound" xml:space="preserve">
+        <value>Paiement introuvable!</value>
     </data>
 </root>

@@ -13,8 +13,19 @@ public class QueueHostedService : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var workItem = await _taskQueue.DequeueAsync(stoppingToken);
-            await workItem();
+            try
+            {
+                var workItem = await _taskQueue.DequeueAsync(stoppingToken);
+                await workItem();
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
         }
     }
 }

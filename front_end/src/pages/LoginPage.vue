@@ -2,14 +2,14 @@
 import { useI18n } from 'vue-i18n'
 import logo from '../images/logo.png'
 import { ref } from 'vue'
-import axios from 'axios'
+import api from '@/api/api'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const auth = useAuthStore();
+const auth = useAuthStore()
 const user = ref({
   usernameOrEmail: '',
   password: '',
@@ -30,8 +30,8 @@ const handleSubmit = async () => {
 
   let res = null
   try {
-    res = await axios.post(
-      `http://localhost:5062/auth/login`,
+    res = await api.post(
+      `/auth/login`,
       {
         usernameOrEmail: usernameOrEmail,
         password: password,
@@ -41,7 +41,7 @@ const handleSubmit = async () => {
         withCredentials: true,
         headers: {
           'Accept-Language': lang,
-        }
+        },
       },
     )
   } catch (error) {
@@ -464,18 +464,15 @@ const handleSubmit = async () => {
       flex-direction: column;
     }
 
-    &__image {
-      height: 200px;
-      flex: none;
-    }
-
     &__card-wrapper {
       padding: 30px 20px;
     }
 
-    &__logo-img {
-      width: 60px;
-      height: 60px;
+    &__image {
+      display: none !important;
+      height: 0 !important;
+      min-height: 0 !important;
+      flex: 0 !important;
     }
 
     &__title {

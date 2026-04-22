@@ -46,4 +46,9 @@ public class RefreshTokenService : IRefreshTokenService
         token.IsRevoked = true;
         await _context.SaveChangesAsync();
     }
+
+    public async Task<List<RefreshToken>> FindByUserIdAsync(string userId)
+    {
+        return await _refreshTokenRepository.FindByUserIdAsync(userId);
+    }
 }

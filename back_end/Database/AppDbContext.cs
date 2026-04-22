@@ -1,4 +1,5 @@
 ﻿using back_end.Entity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,11 +16,22 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<Course> Courses { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<Payment> Payments { get; set; }
+    public DbSet<Lesson> Lessons { get; set; }
+    public DbSet<Wishlist> Wishlists { get; set; }
+    public DbSet<Enrollment> Enrollments { get; set; }
     
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
 
+        builder.Entity<User>().ToTable("aspnetusers");
+        builder.Entity<IdentityRole>().ToTable("aspnetroles");
+        builder.Entity<IdentityUserRole<string>>().ToTable("aspnetuserroles");
+        builder.Entity<IdentityUserClaim<string>>().ToTable("aspnetuserclaims");
+        builder.Entity<IdentityUserLogin<string>>().ToTable("aspnetuserlogins");
+        builder.Entity<IdentityRoleClaim<string>>().ToTable("aspnetroleclaims");
+        builder.Entity<IdentityUserToken<string>>().ToTable("aspnetusertokens");
+        
         builder.Entity<Course>(e =>
         {
             e.ToTable("course");
@@ -104,6 +116,67 @@ public class AppDbContext : IdentityDbContext<User>
                 .WithMany(c => c.Payments)
                 .HasForeignKey(p => p.CourseId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<Lesson>(e =>
+        {
+            e.ToTable("lesson");
+            e.HasKey(l => l.Id);
+            e.Property(l => l.Id)
+                .ValueGeneratedOnAdd();
+            e.Property(l => l.CourseId)
+                .IsRequired();
+            e.Property(l => l.Name)
+                .HasMaxLength(100)
+                .IsRequired();
+            e.Property(l => l.Order)
+                .IsRequired();
+            e.HasOne(l => l.Course)
+                .WithMany(c => c.Lessons)
+                .HasForeignKey(l => l.CourseId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<Wishlist>(e =>
+        {
+            e.ToTable("wishlist");
+            e.HasKey(w => w.Id);
+            e.Property(w => w.Id)
+                .ValueGeneratedOnAdd();
+            e.Property(w => w.UserId)
+                .IsRequired();
+            e.Property(w => w.ItemId)
+                .IsRequired();
+            e.HasOne(w => w.User)
+                .WithMany(u => u.Wishlists)
+                .HasForeignKey(w => w.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(w => w.Item)
+                .WithMany(c => c.Wishlists)
+                .HasForeignKey(w => w.ItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<Enrollment>(e =>
+        {
+            e.ToTable("enrollment");
+            e.HasKey(e => e.Id);
+            e.Property(e => e.Id)
+                .ValueGeneratedOnAdd();
+            e.Property(e => e.UserId)
+                .IsRequired();
+            e.Property(e => e.ItemId)
+                .IsRequired();
+            e.HasOne(e => e.User)
+                .WithMany(u => u.Enrollments)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(e => e.Item)
+                .WithMany(c => c.Enrollments)
+                .HasForeignKey(e => e.ItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(e => new { e.UserId, e.ItemId })
+                .IsUnique();
         });
     }
 }

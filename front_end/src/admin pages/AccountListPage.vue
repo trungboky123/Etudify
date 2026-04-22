@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import authAxios from '@/function/authAxios'
+import api from '@/api/api'
 import DeactivateConfirmation from '@/components/DeactivateConfirmation.vue'
 import SuccessfulToast from '@/components/SuccessfulToast.vue'
 
@@ -54,12 +54,12 @@ const selectedStatusName = computed(() => {
 })
 
 const getAllRoles = async () => {
-  const res = await authAxios.get('/users/roles')
+  const res = await api.get('/users/roles')
   roles.value = res.data
 }
 
 const getAllUsers = async () => {
-  const res = await authAxios.get('/users/all', {
+  const res = await api.get('/users/all', {
     params: {
       keyword: route.query.keyword || '',
       roleId: selectedRole.value || '',
@@ -132,14 +132,14 @@ const handleCancel = () => {
   selectedUserId.value = ''
 }
 
+let timer = null
 const toggleStatus = async (userId) => {
-  await authAxios.put(`/users/status/${userId}`)
+  await api.put(`/users/status/${userId}`)
   await getAllUsers()
   selectedUserId.value = ''
   confirmOpen.value = false
   toastOpen.value = true
 
-  let timer = null
   if (timer) clearTimeout(timer)
   timer = setTimeout(() => {
     toastOpen.value = false
@@ -157,7 +157,6 @@ onUnmounted(() => {
 })
 
 // Search timeout
-let timer = null
 watch(searchKeyword, (newVal) => {
   if (timer) clearTimeout(timer)
 
@@ -288,75 +287,80 @@ watch(
             </tr>
           </thead>
           <tbody>
-            <template v-if="users.length > 0">
-              <tr v-for="(user, index) in users" :key="index">
-                <td>{{ index + 1 }}</td>
-                <td>
-                  <img :src="user.avatarUrl" :alt="user.fullName" class="avatar" />
-                </td>
-                <td class="nameCell">{{ user.fullName }}</td>
-                <td>{{ user.username }}</td>
-                <td>{{ user.email }}</td>
-                <td>
-                  <span :class="`roleBadge ${getRoleBadgeClass(user.role)}`">
-                    {{ user.role }}
-                  </span>
-                </td>
-                <td>
-                  <span :class="`statusBadge ${getStatusBadgeClass(user.status)}`">
-                    {{ getStatus(user.status) }}
-                  </span>
-                </td>
-                <td>
-                  <div class="actionBtns">
-                    <button
-                      class="actionBtn"
-                      @click="handleEditAccount(user.id)"
-                      title="Edit Account"
-                    >
-                      <i class="bi bi-pencil-fill"></i>
-                    </button>
-                    <button
-                      v-if="user.status"
-                      class="actionBtn dangerBtn"
-                      @click="handleDeactivate(user.id)"
-                      title="Deactivate account"
-                    >
-                      <i class="bi bi-x-circle-fill"></i>
-                    </button>
-                    <button
-                      v-else
-                      class="actionBtn successBtn"
-                      @click="handleActivate(user.id)"
-                      title="Activate account"
-                    >
-                      <i className="bi bi-check-circle-fill"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </template>
-            <template v-else>
-              <tr>
-                <td colspan="8" class="emptyState">
-                  <i class="bi bi-inbox"></i>
-                  <p>No accounts found</p>
-                </td>
-              </tr>
-            </template>
+            <tr v-if="users.length === 0">
+              <td colspan="8" class="emptyState">
+                <i class="bi bi-inbox"></i>
+                <p>{{ t('admin.accounts.noAccounts') }}</p>
+              </td>
+            </tr>
+
+            <tr v-for="(user, index) in users" :key="index">
+              <td>{{ index + 1 }}</td>
+              <td>
+                <img :src="user.avatarUrl" :alt="user.fullName" class="avatar" />
+              </td>
+              <td class="nameCell">{{ user.fullName }}</td>
+              <td>{{ user.username }}</td>
+              <td>{{ user.email }}</td>
+              <td>
+                <span :class="`roleBadge ${getRoleBadgeClass(user.role)}`">
+                  {{ user.role }}
+                </span>
+              </td>
+              <td>
+                <span
+                  :class="`statusBadge ${getStatusBadgeClass(user.status)}`"
+                  style="text-align: center"
+                >
+                  {{ getStatus(user.status) }}
+                </span>
+              </td>
+              <td>
+                <div class="actionBtns">
+                  <button
+                    class="actionBtn"
+                    @click="handleEditAccount(user.id)"
+                    title="Edit Account"
+                  >
+                    <i class="bi bi-pencil-fill"></i>
+                  </button>
+                  <button
+                    v-if="user.status"
+                    class="actionBtn dangerBtn"
+                    @click="handleDeactivate(user.id)"
+                    title="Deactivate account"
+                  >
+                    <i class="bi bi-x-circle-fill"></i>
+                  </button>
+                  <button
+                    v-else
+                    class="actionBtn successBtn"
+                    @click="handleActivate(user.id)"
+                    title="Activate account"
+                  >
+                    <i className="bi bi-check-circle-fill"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <DeactivateConfirmation v-if="confirmOpen" :id="selectedUserId" @cancel="handleCancel" :type="type" :activation="activation" @confirm="toggleStatus" />
+  <DeactivateConfirmation
+    v-if="confirmOpen"
+    :id="selectedUserId"
+    @cancel="handleCancel"
+    :type="type"
+    :activation="activation"
+    @confirm="toggleStatus"
+  />
   <SuccessfulToast v-if="toastOpen" @close="toastOpen = false" />
 </template>
 
 <style scoped lang="scss">
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
 .accounts {
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%);

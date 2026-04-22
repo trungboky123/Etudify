@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import logo from '../images/logo.png'
 import { ref } from 'vue'
-import axios from 'axios'
+import api from '@/api/api'
 
 const { t } = useI18n()
 const user = ref({
@@ -36,8 +36,8 @@ const handleSubmit = async () => {
   const lang = localStorage.getItem('lang') || 'en'
   let res = null
   try {
-    res = await axios.post(
-      'http://localhost:5062/auth/register',
+    res = await api.post(
+      '/auth/register',
       {
         fullName,
         username,
@@ -51,9 +51,9 @@ const handleSubmit = async () => {
       },
     )
   } catch (error) {
-    const data = await error.response?.data
-    message.value = data.message?.value
+    message.value = error.response?.data?.message
     isRegistered.value = false
+    return
   } finally {
     isLoading.value = false
   }
@@ -480,18 +480,15 @@ const handleSubmit = async () => {
       flex-direction: column;
     }
 
-    &__image {
-      height: 200px;
-      flex: none;
-    }
-
     &__card-wrapper {
       padding: 30px 20px;
     }
 
-    &__logo-img {
-      width: 60px;
-      height: 60px;
+    &__image {
+      display: none !important;
+      height: 0 !important;
+      min-height: 0 !important;
+      flex: 0 !important;
     }
 
     &__title {

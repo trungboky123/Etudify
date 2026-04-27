@@ -1,4 +1,5 @@
 ﻿using back_end.Database;
+using back_end.Entity;
 using back_end.Repository.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,5 +18,11 @@ public class EnrollmentRepository : IEnrollmentRepository
     {
         return await _context.Enrollments
             .AnyAsync(e => e.UserId == userId && e.ItemId == itemId);
+    }
+
+    public IQueryable<Enrollment> GetByUserIdAsync(string userId)
+    {
+        return  _context.Enrollments
+            .Where(e => e.UserId == userId);
     }
 }

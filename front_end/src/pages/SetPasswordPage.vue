@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import api from '@/api/api'
@@ -17,13 +17,12 @@ const showPassword = ref(false)
 const message = ref('')
 const isSuccess = ref(false)
 const isLoading = ref(false)
-const userEmail = ref('')
-const token = ref('')
+const token = route.query.token
+const userId = route.query.userId
 
 const handleSubmit = async () => {
   message.value = ''
 
-  // Validation
   if (!passwordData.value.password) {
     message.value = 'Please enter a password'
     isSuccess.value = false
@@ -36,57 +35,51 @@ const handleSubmit = async () => {
     return
   }
 
-  if (passwordData.value.password.length < 8) {
-    message.value = 'Password must be at least 8 characters'
-    isSuccess.value = false
-    return
-  }
-
   isLoading.value = true
 
+  let res = null
   try {
-    await api.post('/auth/set-password', {
-      token: token.value,
-      password: passwordData.value.password,
+    res = await api.post('/auth/reset-password', {
+      userId: userId,
+      token: token,
+      newPassword: passwordData.value.password,
     })
-
-    isSuccess.value = true
-    message.value = 'Password set successfully! Redirecting to login...'
-
-    // Redirect to login after 2 seconds
-    setTimeout(() => {
-      router.push('/login')
-    }, 2000)
   } catch (error) {
-    message.value = error.response?.data?.message || 'Failed to set password. Please try again.'
+    message.value = error.response?.data?.message
     isSuccess.value = false
   } finally {
     isLoading.value = false
   }
+
+  isSuccess.value = true
+  message.value = res.data?.message?.value
+
+  setTimeout(() => {
+    router.push('/login')
+  }, 2000)
 }
 
-// onMounted(async () => {
-//   token.value = route.query.token
-
-//   if (!token.value) {
-//     router.push('/error', { replace: true })
-//     return
-//   }
-
-//   // Verify token and get user email
-//   try {
-//     const response = await api.get(`/auth/verify-token?token=${token.value}`)
-//     userEmail.value = response.data.email
-//   } catch (error) {
-//     message.value = 'Invalid or expired link'
-//     isSuccess.value = false
-//   }
-// })
+onMounted(async () => {
+  // if (!route.query.userId || !route.query.token) {
+  //   router.push('/error', { replace: true })
+  //   return
+  // }
+  // // Verify token and get user email
+  // try {
+  //   const response = await api.get(`/auth/verify-token?token=${token.value}`)
+  //   userEmail.value = response.data.email
+  // } catch (error) {
+  //   message.value = 'Invalid or expired link'
+  //   isSuccess.value = false
+  // }
+})
 </script>
 
 <template>
   <div class="set-password">
     <div class="set-password__container">
+      <div class="set-password__image"></div>
+
       <div class="set-password__card-wrapper">
         <div class="set-password__card">
           <!-- Logo & Header -->
@@ -96,10 +89,6 @@ const handleSubmit = async () => {
             </RouterLink>
             <h1 class="set-password__title">Set Your Password</h1>
             <p class="set-password__subtitle">Create a secure password for your account</p>
-            <p v-if="userEmail" class="set-password__email">
-              <i class="bi bi-envelope-fill"></i>
-              {{ userEmail }}
-            </p>
           </div>
 
           <form @submit.prevent="handleSubmit">
@@ -212,6 +201,21 @@ const handleSubmit = async () => {
     background-image: url('https://images.unsplash.com/photo-1614064641938-3bbee52942c7?q=80&w=2070');
     background-size: cover;
     background-position: center;
+  }
+
+  &__image {
+    flex: 1.5;
+    background: url('https://codequotient.com/blog/wp-content/uploads/2020/12/6-Reasons-Why-Having-a-Professional-Coder-Certification-Is-Crucial.jpg');
+    background-size: cover;
+    background-position: center;
+    min-height: 100vh;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+    }
   }
 
   &__card-wrapper {

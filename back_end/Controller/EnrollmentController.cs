@@ -24,4 +24,13 @@ public class EnrollmentController : ControllerBase
         var result = await _enrollmentService.HasEnrolled(userId, itemId);
         return Ok(result);
     }
+
+    [Authorize]
+    [HttpGet("user")]
+    public async Task<IActionResult> GetByUser([FromQuery] string? keyword, int? categoryId, string? sortBy, string? sortDir)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var results = await _enrollmentService.GetByUserId(userId, keyword, categoryId, sortBy, sortDir);
+        return Ok(results);
+    }
 }

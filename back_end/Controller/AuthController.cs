@@ -198,7 +198,7 @@ public class AuthController : ControllerBase
 
         return Ok();
     }
-
+    
     [HttpPost("verify-password-token")]
     public async Task<IActionResult> VerifyPasswordToken([FromBody] VerifyTokenRequest request)
     {
@@ -243,8 +243,7 @@ public class AuthController : ControllerBase
         var result = await _userManager.ResetPasswordAsync(user, decoded, request.NewPassword);
         if (!result.Succeeded)
         {
-            var error = result.Errors.FirstOrDefault();
-            throw new ApiExceptionResponse(error.Description);
+            throw new ApiExceptionResponse(_localizer["PasswordInvalid"]);
         }
         
         return Ok(new { message = _localizer["ChangePasswordSuccess"] });

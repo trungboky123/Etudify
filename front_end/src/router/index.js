@@ -8,11 +8,12 @@ import MainLayout from '@/layouts/MainLayout.vue'
 import ErrorPage from '@/pages/ErrorPage.vue'
 import HomePage from '@/pages/HomePage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
+import MyEnrollmentsPage from '@/pages/MyEnrollmentsPage.vue'
 import PublicCourseDetailsPage from '@/pages/PublicCourseDetailsPage.vue'
 import PublicCoursesPage from '@/pages/PublicCoursesPage.vue'
 import QrPage from '@/pages/QrPage.vue'
 import RegisterPage from '@/pages/RegisterPage.vue'
-import ResetPasswordPage from '@/pages/ResetPasswordPage.vue'
+import SetPasswordPage from '@/pages/SetPasswordPage.vue'
 import UserProfilePage from '@/pages/UserProfilePage.vue'
 import VerifyEmailPage from '@/pages/VerifyEmailPage.vue'
 import {
@@ -68,7 +69,8 @@ const router = createRouter({
           path: '/profile/:id/',
           component: UserProfilePage,
           meta: {
-            title: "My Profile"
+            title: "My Profile",
+            requiresAuth: true
           }
         },
         {
@@ -86,7 +88,16 @@ const router = createRouter({
           path: '/payment/:slug/:id',
           component: QrPage,
           meta: {
-            title: 'Payment'
+            title: 'Payment',
+            requiresAuth: true
+          }
+        },
+        {
+          path: '/enrollments/:id',
+          component: MyEnrollmentsPage,
+          meta: {
+            title: 'My Enrollments',
+            requiresAuth: true
           }
         }
       ]
@@ -153,12 +164,12 @@ const router = createRouter({
       }
     },
     {
-      path: "/reset-password",
-      component: ResetPasswordPage,
+      path: "/set-password",
+      component: SetPasswordPage,
       meta: {
-        title: "Reset Password"
+        title: "Reset Password",
       }
-    }
+    },
   ],
 })
 

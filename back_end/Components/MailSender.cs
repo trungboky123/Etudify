@@ -66,4 +66,28 @@ public class MailSender
         await client.SendAsync(mailMessage);
         await client.DisconnectAsync(true);
     }
+    
+    public async Task SendPurchaseItem(string toEmail, string username, string itemName)
+    {
+        var html = await _razorService.RenderAsync("Email/ItemPurchase.cshtml", new
+        {
+            Username = username,
+            Email = toEmail,
+            ItemName = itemName
+        });
+        var mailMessage = new MimeMessage();
+        mailMessage.From.Add(new MailboxAddress("Étudify", _smtpUser));
+        mailMessage.To.Add(new MailboxAddress("", toEmail));
+        mailMessage.Subject = "Thank you for your purchase!";
+        mailMessage.Body = new TextPart("html")
+        {
+            Text = html
+        };
+
+        using var client = new SmtpClient();
+        await client.ConnectAsync(_smtpHost, _smtpPort, SecureSocketOptions.StartTls);
+        await client.AuthenticateAsync(_smtpUser, _smtpPass);
+        await client.SendAsync(mailMessage);
+        await client.DisconnectAsync(true);
+    }
 }

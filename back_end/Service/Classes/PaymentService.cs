@@ -17,14 +17,18 @@ public class PaymentService : IPaymentService
     private readonly PayOsService _payOsService;
     private readonly IStringLocalizer<Messages> _localizer;
     private readonly IEnrollmentService _enrollmentService;
+    private readonly BackgroundTaskQueue _taskQueue;
+    private readonly MailSender _mailSender;
 
-    public PaymentService(IPaymentRepository paymentRepository, AppDbContext context,  PayOsService payOsService,  IStringLocalizer<Messages> localizer, IEnrollmentService enrollmentService)
+    public PaymentService(IPaymentRepository paymentRepository, AppDbContext context,  PayOsService payOsService,  IStringLocalizer<Messages> localizer, IEnrollmentService enrollmentService, BackgroundTaskQueue taskQueue, MailSender mailSender)
     {
         _paymentRepository = paymentRepository;
         _context = context;
         _payOsService = payOsService;
         _localizer = localizer;
         _enrollmentService = enrollmentService;
+        _taskQueue = taskQueue;
+        _mailSender = mailSender;
     }
 
     public async Task<decimal> TotalRevenue()
@@ -122,5 +126,10 @@ public class PaymentService : IPaymentService
         await _context.SaveChangesAsync();
         
         await _enrollmentService.Enroll(payment.UserId, payment.CourseId);
+        
+        _taskQueue.QueueBackgroundWorkItem(async () =>
+        {
+            await _mailSender.SendPurchaseItem(payment.User.Email, payment.User.UserName, payment.Course.Name);
+        });
     }
 }

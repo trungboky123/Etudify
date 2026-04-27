@@ -216,7 +216,7 @@ const currentLang = computed(() => {
                 <i class="bi bi-heart"></i>
                 {{ t('nav.wishlist') }}
               </RouterLink>
-              <RouterLink class="hd-item" to="/my-enrollments" @click="() => (userOpen = false)">
+              <RouterLink class="hd-item" :to="`/enrollments/${auth.user?.id}`" @click="() => (userOpen = false)">
                 <i class="bi bi-journal-bookmark"></i>
                 {{ t('nav.myEnrollments') }}
               </RouterLink>

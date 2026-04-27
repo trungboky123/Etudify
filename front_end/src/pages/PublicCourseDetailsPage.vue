@@ -110,6 +110,11 @@ const handleBuyCourse = async(courseId) => {
     amount: course.value.salePrice ?? course.value.listedPrice
   })
   payment.info = res.data
+  payment.info = {
+    ...payment.info,
+    name: course.value.name,
+    id: course.value.id
+  }
   router.push({
     path: `/payment/${course.value.slug}/${courseId}`,
   })

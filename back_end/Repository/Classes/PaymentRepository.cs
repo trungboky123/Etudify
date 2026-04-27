@@ -73,6 +73,8 @@ public class PaymentRepository : IPaymentRepository
     public async Task<Payment?> GetByOrderCodeAsync(long orderCode)
     {
         return await _context.Payments
+            .Include(p => p.User)
+            .Include(p => p.Course)
             .FirstOrDefaultAsync(p => p.OrderCode == orderCode);
     }
 }

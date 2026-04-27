@@ -27,6 +27,8 @@ public class UserService : IUserService
     private readonly IUserRepository _userRepository;
     private readonly IMapper _mapper;
     private static readonly string DefaultAvatarUrl = "https://i.pinimg.com/736x/21/91/6e/21916e491ef0d796398f5724c313bbe7.jpg";
+    private static readonly string ProductionUrl = "https://lackadaisical-estrual-spencer.ngrok-free.dev";
+    private static readonly string DevelopmentUrl = "localhost:8080";
 
     public UserService(UserManager<User> userManager, RegisterValidator registerValidator, UpdateUserValidator updateUserValidator, CloudinaryService cloudinaryService, IStringLocalizer<Messages> localizer, BackgroundTaskQueue taskQueue, MailSender mailSender, IUserRepository userRepository, IMapper mapper, AddAccountValidator addAccountValidator, RoleManager<IdentityRole> roleManager)
     {
@@ -259,7 +261,7 @@ public class UserService : IUserService
     {
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-        var link = $"https://lackadaisical-estrual-spencer.ngrok-free.dev/api/auth/reset-password?&userId={user.Id}&token={encoded}";
+        var link = $"https://lackadaisical-estrual-spencer.ngrok-free.dev/set-password?&userId={user.Id}&token={encoded}";
         _taskQueue.QueueBackgroundWorkItem(async () =>
         {
             await _mailSender.SendResetPasswordAsync(user.Email, user.UserName, link);

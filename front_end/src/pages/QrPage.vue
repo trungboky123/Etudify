@@ -4,7 +4,9 @@ import { QrcodeCanvas } from 'qrcode.vue'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/api'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const router = useRouter()
 const payment = usePaymentStore()
 const paymentSuccess = ref(false)
@@ -59,7 +61,6 @@ onMounted(() => {
   if (timer) clearInterval(timer)
 
   timer = setInterval(async() => {
-    console.log("12345")
     const res = await api.get('/payments/status', {
       params: {
         orderCode: orderCode
@@ -88,15 +89,15 @@ onMounted(() => {
             <i class="bi bi-arrow-left"></i>
           </button>
           <h1 class="title">
-            Payment: Course
+            {{ t('qr.title') }}
             <i>{{ name }}</i>
           </h1>
         </div>
         <div class="content">
           <div class="qrCard">
             <div class="qrHeader">
-              <h2 class="qrTitle">Scan QR Code to Pay</h2>
-              <p class="qrSubtitle">Use your banking app to scan this QR code</p>
+              <h2 class="qrTitle">{{ t('qr.scan') }}</h2>
+              <p class="qrSubtitle">{{ t('qr.use') }}</p>
             </div>
             <div class="qrImageWrapper">
               <div class="qrImageContainer">
@@ -113,10 +114,10 @@ onMounted(() => {
 
           <div class="detailsCard">
             <div class="detailsHeader">
-              <h3 class="detailsTitle">Payment Information</h3>
+              <h3 class="detailsTitle">{{ t('qr.info') }}</h3>
               <span class="statusBadge">
                 <i class="bi bi-circle-fill"></i>
-                Pending
+                {{ t('qr.pending') }}
               </span>
             </div>
 
@@ -124,20 +125,20 @@ onMounted(() => {
               <div class="detailSection">
                 <div class="sectionHeader">
                   <i class="bi bi-bank"></i>
-                  <h4>Bank Information</h4>
+                  <h4>{{ t('qr.bankInfo') }}</h4>
                 </div>
                 <div class="detailItem">
-                  <span class="label">Bank Name</span>
+                  <span class="label">{{ t('qr.bankName') }}</span>
                   <span class="value">{{ bankName }}</span>
                 </div>
                 <div class="detailItem">
-                  <span class="label"> Account Name </span>
+                  <span class="label"> {{ t('qr.accountName') }} </span>
                   <span class="value">
                     {{ accountName }}
                   </span>
                 </div>
                 <div class="detailItem">
-                  <span class="label"> Account Number </span>
+                  <span class="label"> {{ t('qr.accountNumber') }} </span>
                   <div class="valueWithCopy">
                     <span class="value">
                       {{ accountNumber }}
@@ -148,11 +149,11 @@ onMounted(() => {
                     >
                       <div v-if="copy.accountNumber">
                         <i class="bi bi-check2"></i>
-                        <span>Copied</span>
+                        <span>{{ t('qr.copied') }}</span>
                       </div>
                       <div v-else>
                         <i class="bi bi-copy"></i>
-                        <span>Copy</span>
+                        <span>{{ t('qr.copy') }}</span>
                       </div>
                     </button>
                   </div>
@@ -162,10 +163,10 @@ onMounted(() => {
               <div class="detailSection">
                 <div class="sectionHeader">
                   <i class="bi bi-cash-coin"></i>
-                  <h4>Transfer Details</h4>
+                  <h4>{{ t('qr.details') }}</h4>
                 </div>
                 <div class="detailItem">
-                  <span class="label"> Amount </span>
+                  <span class="label"> {{ t('qr.amount') }} </span>
                   <div class="valueWithCopy">
                     <span class="value amount">
                       {{ formatPrice(amount) }}
@@ -176,18 +177,18 @@ onMounted(() => {
                     >
                       <div v-if="copy.amount">
                         <i class="bi bi-check2"></i>
-                        <span>Copied</span>
+                        <span>{{ t('qr.copied') }}</span>
                       </div>
                       <div v-else>
                         <i class="bi bi-copy"></i>
-                        <span>Copy</span>
+                        <span>{{ t('qr.copy') }}</span>
                       </div>
                     </button>
                   </div>
                 </div>
 
                 <div class="detailItem">
-                  <span class="label"> Transfer Content </span>
+                  <span class="label"> {{ t('qr.content') }} </span>
                   <div class="valueWithCopy">
                     <span class="value">
                       {{ description }}
@@ -195,11 +196,11 @@ onMounted(() => {
                     <button class="copyBtn" @click="handleCopy(description, 'description')">
                       <div v-if="copy.content">
                         <i class="bi bi-check2"></i>
-                        <span>Copied</span>
+                        <span>{{ t('qr.copied') }}</span>
                       </div>
                       <div v-else>
                         <i class="bi bi-copy"></i>
-                        <span>Copy</span>
+                        <span>{{ t('qr.copy') }}</span>
                       </div>
                     </button>
                   </div>
@@ -211,17 +212,17 @@ onMounted(() => {
               <div class="noteItem">
                 <i class="bi bi-exclamation-circle"></i>
                 <p>
-                  Please ensure the transfer content exactly matches:
+                  {{ t('qr.noteFirst') }}
                   <strong>{{ description }}</strong>
                 </p>
               </div>
               <div class="noteItem">
                 <i class="bi bi-shield-check"></i>
-                <p>Your payment will be verified automatically within seconds</p>
+                <p>{{ t('qr.noteSecond') }}</p>
               </div>
               <div class="noteItem">
                 <i class="bi bi-telephone"></i>
-                <p>Contact support if you encounter any issues: <strong>0833210030</strong></p>
+                <p>{{ t('qr.noteThird') }} <strong>0833210030</strong></p>
               </div>
             </div>
           </div>
@@ -234,15 +235,14 @@ onMounted(() => {
             <i class="bi bi-check-circle-fill"></i>
           </div>
           <h2 class="successTitle">
-            Successful!
+            {{ t('qr.success') }}
           </h2>
           <p class="successMessage">
-            Your payment has been processed successfully.
-            You can now access the course: <strong>{{ name }}</strong>
+            {{ t('qr.message') }} <strong>{{ name }}</strong>
           </p>
           <button class="homeBtn" @click="router.push('/my-enrollments')">
             <i class="bi bi-house-door-fill"></i>
-            Go to My Enrollments
+            {{ t('qr.goTo') }}
           </button>
         </div>
       </div>

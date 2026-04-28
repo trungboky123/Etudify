@@ -1,4 +1,5 @@
 ﻿using back_end.Database;
+using back_end.Entity;
 using back_end.Repository.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,5 +27,12 @@ public class WishlistRepository : IWishlistRepository
         if (wishlist == null) return;
         _context.Wishlists.Remove(wishlist);
         await _context.SaveChangesAsync();
-    } 
+    }
+
+    public IQueryable<Wishlist> GetByUserIdAsync(string userId)
+    {
+        return _context.Wishlists
+            .Include(w => w.Item)
+            .Where(w => w.UserId == userId);
+    }
 }

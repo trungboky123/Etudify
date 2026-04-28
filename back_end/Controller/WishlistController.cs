@@ -25,6 +25,16 @@ public class WishlistController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("user")]
+    [Authorize]
+    public async Task<IActionResult> GetByUser([FromQuery] string? keyword, [FromQuery] int? categoryId,
+        [FromQuery] string? sortBy, [FromQuery] string? sortDir)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var result = await _wishlistService.GetByUserId(userId, keyword, categoryId, sortBy, sortDir);
+        return Ok(result);
+    }
+
     [HttpPost("add")]
     [Authorize]
     public async Task<IActionResult> AddToWishlist([FromQuery] int itemId)

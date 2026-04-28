@@ -103,6 +103,19 @@ const handleAddToWishlist = async() => {
   isInWishList.value = true
 }
 
+const removeFromWishlist = async() => {
+  const itemId = id
+  try {
+    await api.delete(`/wishlists/remove?itemId=${itemId}`)
+  } catch (error) {
+    console.log("Error in removing from your wishlist: " + error.response.data);
+    isInWishList.value = false
+    return
+  }
+
+  isInWishList.value = false
+}
+
 const handleBuyCourse = async(courseId) => {
   const payment = usePaymentStore()
   const res = await api.post("/payments/create", {
@@ -147,9 +160,9 @@ onMounted(async () => {
         <div class="col-lg-8">
           <div class="courseHeader">
             <div class="courseBreadcrumb">
-              <RouterLink to="/home" style="color: black"> Home </RouterLink>
+              <RouterLink to="/home" style="color: black"> {{ t('details.home') }} </RouterLink>
               <i class="bi bi-chevron-right"></i>
-              <RouterLink to="/public-courses" style="color: black"> Public Courses </RouterLink>
+              <RouterLink to="/public-courses" style="color: black"> {{ t('details.courses') }} </RouterLink>
               <i class="bi bi-chevron-right"></i>
               <span class="courseBreadcrumbCurrent">
                 {{ course.name }}
@@ -173,7 +186,7 @@ onMounted(async () => {
           <div class="section">
             <h2 class="sectionTitle">
               <i class="bi bi-book-fill"></i>
-              Course Description
+              {{ t('details.description') }}
             </h2>
             <div class="thumbnail">
               <img :src="course.thumbnailUrl" :alt="course.name" class="thumbnailImg" />
@@ -184,7 +197,7 @@ onMounted(async () => {
           <div class="section">
             <h2 class="sectionTitle">
               <i class="bi bi-person-fill"></i>
-              Instructor
+              {{ t('details.instructor') }}
             </h2>
             <div class="instructor">
               <img
@@ -196,7 +209,9 @@ onMounted(async () => {
                 <h3 class="instructorName">
                   {{ course.instructor.fullName }}
                 </h3>
-                <p class="instructorTitle">Course Expert</p>
+                <p class="instructorTitle">
+                  {{ t('details.expert') }}
+                </p>
                 <div class="instructorEmail">
                   <i class="bi bi-envelope-fill"></i>
                   <span>{{ course.instructor.email }}</span>
@@ -207,18 +222,18 @@ onMounted(async () => {
           <div class="section">
             <h2 class="sectionTitle">
               <i class="bi bi-list-ul"></i>
-              Course Content
+              {{ t('details.content') }}
             </h2>
             <div class="contentStats">
-              <span>{{ lessons.length }} lessons</span>
+              <span>{{ lessons.length }} {{ t('details.lessons') }}</span>
               <span>•</span>
-              <span>{{ course.duration }} minutes total</span>
+              <span>{{ course.duration }} {{ t('details.minutes') }}</span>
             </div>
 
             <div class="lessonsList">
               <div v-if="lessons.length === 0" class="noLessons">
                 <i class="bi bi-info-circle"></i>
-                <span>No lessons available yet</span>
+                <span>{{ t('details.noLesson') }}</span>
               </div>
 
               <div v-for="(lesson, index) in lessons" :key="lesson.id" class="lessonsItem">
@@ -234,11 +249,11 @@ onMounted(async () => {
                     :to="`/${course.slug}/${id}/${lesson.slug}`"
                   >
                     <i class="bi bi-eye-fill"></i>
-                    Preview
+                    {{ t('details.preview') }}
                   </RouterLink>
                   <span v-else class="lockedBadge">
                     <i class="bi bi-lock-fill"></i>
-                    Locked
+                    {{ t('details.locked') }}
                   </span>
                 </div>
               </div>
@@ -277,11 +292,13 @@ onMounted(async () => {
                 <div v-if="hasEnrolled">
                   <div class="enrolledMessage">
                     <i class="bi bi-check-circle-fill"></i>
-                    <span>You have already purchased this course</span>
+                    <span>
+                      {{ t('details.hasEnrolled') }}
+                    </span>
                   </div>
                   <button class="goToMyCourseBtn" @click="handleGoToMyEnrollments">
                     <i class="bi bi-collection-play-fill"></i>
-                    Go to My Enrollments
+                    {{ t('details.goTo') }}
                   </button>
                 </div>
                 <div v-else>
@@ -291,51 +308,51 @@ onMounted(async () => {
                     @click="handleGetCourse(course.id)"
                   >
                     <i class="bi bi-cart-plus-fill"></i>
-                    Get Course Now
+                    {{ t('details.getCourse') }}
                   </button>
                   <button v-else class="enrollBtn" @click="handleBuyCourse(course.id)">
                     <i class="bi bi-cart-plus-fill"></i>
-                    Buy Course Now
+                    {{ t('details.buyCourse') }}
                   </button>
-                  <button v-if="isInWishList" class="wishlistBtn" @click="router.push('/wishlist')">
+                  <button v-if="isInWishList" class="wishlistBtn" @click="removeFromWishlist">
                     <i class="bi bi-check-square-fill"></i>
-                    View Wishlist
+                    {{ t('details.inWishlist') }}
                   </button>
                   <button v-else class="wishlistBtn" @click="handleAddToWishlist">
                     <i class="bi bi-heart"></i>
-                    Add to Wishlist
+                    {{ t('details.addTo') }}
                   </button>
                 </div>
               </div>
               <div v-else>
                 <button class="loginToEnrollBtn" @click="handleLogin">
                   <i class="bi bi-box-arrow-in-right"></i>
-                  Login to Enroll in this course
+                  {{ t('details.loginTo') }}
                 </button>
               </div>
 
               <div class="feature">
                 <div class="featureItem">
                   <i class="bi bi-infinity"></i>
-                  <span>Lifetime Access</span>
+                  <span>{{ t('details.lifetime') }}</span>
                 </div>
                 <div class="featureItem">
                   <i class="bi bi-phone"></i>
-                  <span>Access on Mobile & TV</span>
+                  <span>{{ t('details.mobileTV') }}</span>
                 </div>
                 <div class="featureItem">
                   <i class="bi bi-award"></i>
-                  <span>Certificate of Completion</span>
+                  <span>{{ t('details.certificate') }}</span>
                 </div>
                 <div class="featureItem">
                   <i class="bi bi-arrow-clockwise"></i>
-                  <span>30-Day Money-Back Guarantee</span>
+                  <span>{{ t('details.guarantee') }}</span>
                 </div>
               </div>
             </div>
 
             <div class="share">
-              <h3>Share this course</h3>
+              <h3>{{ t('details.share') }}</h3>
               <div class="shareWrapper">
                 <button class="shareBtn">
                   <i class="bi bi-facebook"></i>

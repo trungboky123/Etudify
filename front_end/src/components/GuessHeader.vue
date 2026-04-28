@@ -212,7 +212,7 @@ const currentLang = computed(() => {
                 <i class="bi bi-person"></i>
                 {{ t('nav.profile') }}
               </RouterLink>
-              <RouterLink class="hd-item" to="/wishlist" @click="() => (userOpen = false)">
+              <RouterLink class="hd-item" :to="`/wishlist/${auth.user?.id}`" @click="() => (userOpen = false)">
                 <i class="bi bi-heart"></i>
                 {{ t('nav.wishlist') }}
               </RouterLink>

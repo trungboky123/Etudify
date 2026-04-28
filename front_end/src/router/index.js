@@ -16,6 +16,7 @@ import RegisterPage from '@/pages/RegisterPage.vue'
 import SetPasswordPage from '@/pages/SetPasswordPage.vue'
 import UserProfilePage from '@/pages/UserProfilePage.vue'
 import VerifyEmailPage from '@/pages/VerifyEmailPage.vue'
+import WishlistPage from '@/pages/WishlistPage.vue'
 import {
   useAuthStore
 } from '@/stores/auth'
@@ -97,6 +98,14 @@ const router = createRouter({
           component: MyEnrollmentsPage,
           meta: {
             title: 'My Enrollments',
+            requiresAuth: true
+          }
+        },
+        {
+          path: '/wishlist/:id',
+          component: WishlistPage,
+          meta: {
+            title: 'Wishlist',
             requiresAuth: true
           }
         }

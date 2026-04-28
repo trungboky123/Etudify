@@ -5,22 +5,60 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/api'
 
 const { t, locale } = useI18n()
-const router = useRouter()
 const route = useRoute()
+const router = useRouter()
 const isLoading = ref(false)
+
+const options = [
+  {
+    sortBy: 'default',
+    sortDir: 'default',
+    label: 'Default',
+    icon: 'bi bi-grid',
+  },
+  {
+    sortBy: 'date',
+    sortDir: 'desc',
+    label: 'Newest First',
+    icon: 'bi bi-sort-up',
+  },
+  {
+    sortBy: 'date',
+    sortDir: 'asc',
+    label: 'Oldest First',
+    icon: 'bi bi-sort-down',
+  },
+  {
+    sortBy: 'price',
+    sortDir: 'desc',
+    label: 'Price: High to Low',
+    icon: 'bi bi-sort-numeric-down',
+  },
+  {
+    sortBy: 'price',
+    sortDir: 'asc',
+    label: 'Price: Low to High',
+    icon: 'bi bi-sort-numeric-up',
+  },
+]
+const categories = ref([])
+const courses = ref([])
+
+const sortRef = ref(null)
+const sortOpen = ref(false)
+const categoryRef = ref(null)
+const categoryOpen = ref(false)
 
 const searchKeyword = ref(route.query.keyword || '')
 const sortBy = ref(route.query.sortBy || 'default')
 const sortDir = ref(route.query.sortDir || 'default')
-const sortRef = ref(null)
-const sortOpen = ref(false)
 const selectedSort = computed(() => {
-  if (sortDir.value === 'asc') return t('enrollments.oldest')
-  else if (sortDir.value === 'desc') return t('enrollments.newest')
-  else return t('enrollments.default')
+  if (sortBy.value === 'date' && sortDir.value === 'desc') return 'Newest First'
+  if (sortBy.value === 'date' && sortDir.value === 'asc') return 'Oldest First'
+  if (sortBy.value === 'price' && sortDir.value === 'desc') return 'Price: High to Low'
+  if (sortBy.value === 'price' && sortDir.value === 'asc') return 'Price: Low to High'
+  return 'Default'
 })
-const categoryRef = ref(null)
-const categoryOpen = ref(false)
 const selectedCategory = computed(() => {
   return categories.value.find((cat) => cat.name === route.query.category)?.id || 0
 })
@@ -28,8 +66,16 @@ const selectedCategoryName = computed(() => {
   return categories.value.find((cat) => cat.id === selectedCategory.value)?.name || ''
 })
 
-const categories = ref([])
-const courses = ref([])
+const handleCategoryChange = (categoryId) => {
+  const category = categories.value.find((cat) => cat.id === categoryId)
+  router.replace({
+    query: {
+      ...route.query,
+      category: category ? category.name : undefined,
+    },
+  })
+  categoryOpen.value = false
+}
 
 const handleSort = (by, dir) => {
   sortBy.value = by
@@ -44,15 +90,24 @@ const handleSort = (by, dir) => {
   })
 }
 
-const handleCategoryChange = (categoryId) => {
-  const category = categories.value.find((cat) => cat.id === categoryId)
-  router.replace({
-    query: {
-      ...route.query,
-      category: category ? category.name : undefined,
-    },
-  })
-  categoryOpen.value = false
+const handleClickOutside = (e) => {
+  if (sortRef.value && !sortRef.value.contains(e.target)) {
+    sortOpen.value = false
+  }
+  if (categoryRef.value && !categoryRef.value.contains(e.target)) {
+    categoryOpen.value = false
+  }
+}
+
+const handleRemove = async(itemId) => {
+  try {
+    await api.delete(`/wishlists/remove?itemId=${itemId}`)
+  } catch (error) {
+    console.log("Error in removing from your wishlist: " + error.response.data);
+    return
+  }
+
+  getAllCourses()
 }
 
 const getAllCategories = async () => {
@@ -62,7 +117,7 @@ const getAllCategories = async () => {
 
 const getAllCourses = async () => {
   isLoading.value = true
-  const res = await api.get('/enrollments/user', {
+  const res = await api.get('/wishlists/user', {
     params: {
       keyword: route.query.keyword || '',
       categoryId: selectedCategory.value || '',
@@ -74,13 +129,17 @@ const getAllCourses = async () => {
   courses.value = res.data
 }
 
-const handleClickOutside = (e) => {
-  if (sortRef.value && !sortRef.value.contains(e.target)) {
-    sortOpen.value = false
-  }
-  if (categoryRef.value && !categoryRef.value.contains(e.target)) {
-    categoryOpen.value = false
-  }
+const calculateDiscount = (listed, sale) => {
+  if (sale === null) return 0
+  const discount = ((listed - sale) / listed) * 100
+  return Math.round(discount)
+}
+
+const formatPrice = (price) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  }).format(price)
 }
 
 const formatDate = (date) =>
@@ -111,12 +170,6 @@ const formatDate = (date) =>
     }
   })
 
-const handleLearn = async (course) => {
-  const res = await api.get(`/lessons/${course.id}`)
-  const lessons = res.data
-  router.push(`/courses/${course.slug}/${course.id}/${lessons[0].slug}`)
-}
-
 onMounted(() => {
   getAllCategories()
   getAllCourses()
@@ -127,6 +180,10 @@ watch(
   () => route.query,
   () => getAllCourses(),
 )
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 
 let timer = null
 watch(searchKeyword, (newVal) => {
@@ -141,24 +198,18 @@ watch(searchKeyword, (newVal) => {
     })
   }, 300)
 })
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
 </script>
 
 <template>
-  <div class="enrollments">
+  <div class="wishlist">
     <div class="container">
       <div class="header">
         <div class="headerContent">
           <h1 class="title">
-            <i class="bi bi-journal-bookmark-fill"></i>
-            {{ t('enrollments.title') }}
+            <i class="bi bi-heart-fill"></i>
+            My Wishlist
           </h1>
-          <p class="subtitle">
-            {{ t('enrollments.subtitle') }}
-          </p>
+          <p class="subtitle">Save your favorite courses for later</p>
         </div>
       </div>
 
@@ -166,8 +217,9 @@ onUnmounted(() => {
         <div class="filterGroup">
           <div class="searchBox">
             <i class="bi bi-search"></i>
-            <input type="text" :placeholder="t('enrollments.search')" v-model="searchKeyword" />
+            <input type="text" placeholder="Search courses..." v-model="searchKeyword" />
           </div>
+
           <div class="dropdown" ref="sortRef">
             <button class="filterBtn" @click="sortOpen = !sortOpen">
               <span>{{ selectedSort }}</span>
@@ -175,34 +227,22 @@ onUnmounted(() => {
             </button>
             <div v-if="sortOpen" class="dropdownMenu">
               <button
-                :class="{ dropdownItem: true, dropdownItemActive: sortDir === 'default' }"
-                @click="handleSort('default', 'default')"
+                v-for="(opt, index) in options"
+                :key="index"
+                :class="{
+                  dropdownItem: true,
+                  dropdownItemActive: sortBy === opt.sortBy && sortDir === opt.sortDir,
+                }"
+                @click="handleSort(opt.sortBy, opt.sortDir)"
               >
                 <span class="dropdownItemLeft">
-                  <i class="bi bi-grid"></i>
-                  {{ t('enrollments.default') }}
+                  <i :class="`${opt.icon}`"></i>
+                  {{ opt.label }}
                 </span>
-                <i v-if="sortDir === 'default'" class="bi bi-check-lg"></i>
-              </button>
-              <button
-                :class="{ dropdownItem: true, dropdownItemActive: sortDir === 'asc' }"
-                @click="handleSort('enrolledAt', 'asc')"
-              >
-                <span class="dropdownItemLeft">
-                  <i class="bi bi-sort-down"></i>
-                  {{ t('enrollments.oldest') }}
-                </span>
-                <i v-if="sortDir === 'asc'" class="bi bi-check-lg"></i>
-              </button>
-              <button
-                :class="{ dropdownItem: true, dropdownItemActive: sortDir === 'desc' }"
-                @click="handleSort('enrolledAt', 'desc')"
-              >
-                <span class="dropdownItemLeft">
-                  <i class="bi bi-sort-up"></i>
-                  {{ t('enrollments.newest') }}
-                </span>
-                <i v-if="sortDir === 'desc'" class="bi bi-check-lg"></i>
+                <i
+                  v-if="sortBy === opt.sortBy && sortDir === opt.sortDir"
+                  class="bi bi-check-lg"
+                ></i>
               </button>
             </div>
           </div>
@@ -239,43 +279,56 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
-
-        <p v-if="courses.length > 0" class="resultCount">
-          {{ t('admin.showing') }} {{ courses.length }} {{ t('enrollments.courses') }}
-        </p>
       </div>
 
       <div class="content">
         <div v-if="isLoading" class="loading">
           <div class="spinner"></div>
-          <p>{{ t('enrollments.loading') }}</p>
+          <p>Loading...</p>
         </div>
         <div v-else-if="courses.length === 0" class="empty">
           <i class="bi bi-inbox"></i>
-          <h3>{{ t('enrollments.notFound') }}</h3>
+          <h3>No Items Found!</h3>
         </div>
         <div v-else class="grid">
-          <div v-for="course in courses" :key="course.id" class="card">
+          <div v-for="course in courses" :key="course.itemId" class="card">
             <div class="cardImage">
-              <img :src="course.thumbnailUrl" :alt="course.name" />
+              <img :src="course.thumbnailUrl" :alt="course.itemName" />
+              <div v-if="course.salePrice" class="discountBadge">
+                {{ calculateDiscount(course.listedPrice, course.salePrice) }}% OFF
+              </div>
             </div>
 
             <div class="cardBody">
               <div class="cardHeader">
-                <h3 class="cardTitle">{{ course.name }}</h3>
+                <h3 class="cardTitle">{{ course.itemName }}</h3>
+                <button
+                  class="removeBtn"
+                  @click="handleRemove(course.itemId)"
+                  title="Remove from wishlist"
+                >
+                  <i class="bi bi-x-lg"></i>
+                </button>
               </div>
-              <div v-if="course.categories?.length > 0" class="categoryTags">
-                <span v-for="category in course.categories" :key="category.id" class="categoryTag">
-                  {{ category.name }}
-                </span>
+
+              <div class="priceSection">
+                <div class="prices">
+                  <span class="currentPrice">
+                    {{ formatPrice(course.salePrice || course.listedPrice) }}
+                  </span>
+                  <span v-if="course.salePrice" class="originalPrice">
+                    {{ formatPrice(course.listedPrice) }}
+                  </span>
+                </div>
               </div>
+
               <div class="cardFooter">
                 <div class="addedDate">
-                  <i class="bi bi-calendar-check"></i>
-                  <span>{{ t('enrollments.enrolled') }} {{ formatDate(course.enrolledAt) }}</span>
+                  <i class="bi bi-calendar-event"></i>
+                  <span>Added {{ formatDate(course.addedAt) }}</span>
                 </div>
-                <button class="viewBtn" @click="handleLearn(course)">
-                  {{ t('enrollments.study') }}
+                <button class="viewBtn" @click="router.push(`/public-course-details/${course.slug}/${course.itemId}`)">
+                  View Details
                   <i class="bi bi-arrow-right"></i>
                 </button>
               </div>
@@ -288,19 +341,13 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
-.enrollments {
+.wishlist {
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
   padding: 40px 20px 80px;
   margin-top: 70px;
-  font-family:
-    'Plus Jakarta Sans',
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
 }
 
-// ─── Header ──────────────────────────────────────────────────────────────────
 .header {
   margin-bottom: 40px;
   text-align: center;
@@ -322,18 +369,22 @@ onUnmounted(() => {
   gap: 16px;
 
   i {
-    color: #667eea;
-    animation: floatIcon 3s ease-in-out infinite;
+    color: #ef4444;
+    animation: heartbeat 1.5s ease-in-out infinite;
   }
 }
 
-@keyframes floatIcon {
+@keyframes heartbeat {
   0%,
   100% {
-    transform: translateY(0);
+    transform: scale(1);
   }
-  50% {
-    transform: translateY(-5px);
+  10%,
+  30% {
+    transform: scale(1.1);
+  }
+  20% {
+    transform: scale(0.95);
   }
 }
 
@@ -341,10 +392,66 @@ onUnmounted(() => {
   font-size: 1.1rem;
   color: #64748b;
 }
-// ─── Filters ─────────────────────────────────────────────────────────────────
+
+// Tabs
+.tabs {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 32px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 32px;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  i {
+    font-size: 1.3rem;
+  }
+
+  &:hover {
+    border-color: #667eea;
+    color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+  }
+
+  &Active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+    color: white;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+  }
+
+  &Count {
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+}
+
+// Filters
 .filters {
   background: white;
-  padding: 20px 24px;
+  padding: 24px;
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   margin-bottom: 32px;
@@ -354,14 +461,13 @@ onUnmounted(() => {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .searchBox {
   position: relative;
   flex: 1;
-  min-width: 240px;
+  min-width: 250px;
 
   i {
     position: absolute;
@@ -377,31 +483,293 @@ onUnmounted(() => {
     padding: 12px 16px 12px 45px;
     border: 2px solid #e2e8f0;
     border-radius: 10px;
-    font-size: 0.97rem;
-    font-family: inherit;
+    font-size: 1rem;
     transition: all 0.3s;
-    color: #1e293b;
 
     &:focus {
       outline: none;
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
+  }
+}
 
-    &::placeholder {
-      color: #94a3b8;
-    }
+.filterSelect {
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 1rem;
+  color: #475569;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s;
+  min-width: 180px;
+
+  &:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  &:hover {
+    border-color: #cbd5e1;
+  }
+}
+
+.resetBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    background: #667eea;
+    border-color: #667eea;
+    color: white;
+  }
+
+  i {
+    font-size: 1.1rem;
   }
 }
 
 .resultCount {
-  color: #94a3b8;
-  font-size: 0.9rem;
+  color: #64748b;
+  font-size: 0.95rem;
   font-weight: 500;
-  margin: 0;
 }
 
-// ─── Sort Dropdown ────────────────────────────────────────────────────────────
+// Content
+.content {
+  min-height: 400px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  &Image {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s;
+    }
+
+    &:hover img {
+      transform: scale(1.05);
+    }
+  }
+
+  &Body {
+    padding: 20px;
+  }
+
+  &Header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  &Title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.4;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  &Footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+  }
+}
+
+.removeBtn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fee2e2;
+  border: none;
+  border-radius: 8px;
+  color: #ef4444;
+  cursor: pointer;
+  transition: all 0.3s;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #ef4444;
+    color: white;
+    transform: rotate(90deg);
+  }
+
+  i {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+}
+
+.discountBadge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.priceSection {
+  margin-bottom: 8px;
+}
+
+.prices {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.currentPrice {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #667eea;
+}
+
+.originalPrice {
+  font-size: 1rem;
+  color: #94a3b8;
+  text-decoration: line-through;
+}
+
+.addedDate {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+  font-size: 0.85rem;
+
+  i {
+    color: #94a3b8;
+  }
+}
+
+.viewBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  }
+
+  i {
+    font-size: 1rem;
+    transition: transform 0.3s;
+  }
+
+  &:hover i {
+    transform: translateX(4px);
+  }
+}
+
+// Empty State
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+
+  i {
+    font-size: 5rem;
+    color: #e2e8f0;
+    margin-bottom: 24px;
+  }
+
+  h3 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 12px;
+  }
+
+  p {
+    font-size: 1.1rem;
+    color: #64748b;
+    max-width: 500px;
+    margin-bottom: 24px;
+  }
+
+  &Btn {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+  }
+}
+
 .dropdown {
   position: relative;
 }
@@ -557,209 +925,7 @@ onUnmounted(() => {
   }
 }
 
-// ─── Content / Grid ───────────────────────────────────────────────────────────
-.content {
-  min-height: 400px;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 24px;
-}
-
-// ─── Card ─────────────────────────────────────────────────────────────────────
-.card {
-  background: white;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s;
-  display: flex;
-  flex-direction: column;
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  }
-}
-
-.cardImage {
-  position: relative;
-  width: 100%;
-  height: 190px;
-  overflow: hidden;
-  flex-shrink: 0;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.4s ease;
-  }
-
-  &:hover img {
-    transform: scale(1.05);
-  }
-}
-
-.cardBody {
-  padding: 18px 20px 20px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  gap: 10px;
-}
-
-.cardHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.cardTitle {
-  font-size: 1.08rem;
-  font-weight: 700;
-  color: #1e293b;
-  line-height: 1.45;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  margin: 0;
-  flex: 1;
-}
-
-// ─── Category Tags (on card only) ─────────────────────────────────────────────
-.categoryTags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.categoryTag {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  background: #f0f2ff;
-  color: #667eea;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border: 1px solid #e0e7ff;
-  white-space: nowrap;
-  transition: all 0.2s;
-
-  &:hover {
-    background: #667eea;
-    color: white;
-    border-color: #667eea;
-  }
-}
-
-// ─── Card Footer ─────────────────────────────────────────────────────────────
-.cardFooter {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: auto;
-  padding-top: 14px;
-  border-top: 1px solid #e2e8f0;
-}
-
-.addedDate {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #64748b;
-  font-size: 0.84rem;
-  font-weight: 500;
-
-  i {
-    color: #10b981;
-    font-size: 0.9rem;
-  }
-}
-
-.viewBtn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 18px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.3s;
-  font-family: inherit;
-
-  i {
-    font-size: 1rem;
-    transition: transform 0.3s;
-  }
-
-  &:hover {
-    transform: translateX(2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-
-    i {
-      transform: translateX(4px);
-    }
-  }
-}
-
-// ─── Empty State ─────────────────────────────────────────────────────────────
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
-  text-align: center;
-
-  i {
-    font-size: 5rem;
-    color: #e2e8f0;
-    margin-bottom: 24px;
-    display: block;
-  }
-  h3 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #1e293b;
-    margin-bottom: 12px;
-  }
-  p {
-    font-size: 1.05rem;
-    color: #64748b;
-    max-width: 480px;
-    margin-bottom: 24px;
-  }
-}
-
-.emptyBtn {
-  padding: 12px 28px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 0.97rem;
-  cursor: pointer;
-  transition: all 0.3s;
-  font-family: inherit;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-  }
-}
-
-// ─── Loading ─────────────────────────────────────────────────────────────────
+// Loading State
 .loading {
   display: flex;
   flex-direction: column;
@@ -769,7 +935,7 @@ onUnmounted(() => {
   text-align: center;
 
   p {
-    font-size: 1.05rem;
+    font-size: 1.1rem;
     color: #64748b;
     margin-top: 20px;
     font-weight: 500;
@@ -791,7 +957,7 @@ onUnmounted(() => {
   }
 }
 
-// ─── Responsive ──────────────────────────────────────────────────────────────
+// Responsive
 @media (max-width: 768px) {
   .title {
     font-size: 2rem;
@@ -800,6 +966,7 @@ onUnmounted(() => {
   .tabs {
     flex-direction: column;
   }
+
   .tab {
     width: 100%;
     justify-content: center;
@@ -808,19 +975,10 @@ onUnmounted(() => {
   .filterGroup {
     flex-direction: column;
   }
-  .searchBox {
-    min-width: 100%;
-  }
-  .filterBtn {
+
+  .searchBox,
+  .filterSelect {
     width: 100%;
-    justify-content: space-between;
-  }
-  .dropdownMenu {
-    min-width: 100%;
-  }
-  .resetBtn {
-    width: 100%;
-    justify-content: center;
   }
 
   .grid {
@@ -832,6 +990,7 @@ onUnmounted(() => {
     gap: 12px;
     align-items: flex-start;
   }
+
   .viewBtn {
     width: 100%;
     justify-content: center;
@@ -839,14 +998,20 @@ onUnmounted(() => {
 }
 
 @media (max-width: 480px) {
-  .enrollments {
+  .wishlist {
     padding: 20px 10px 60px;
   }
+
   .title {
     font-size: 1.6rem;
   }
+
   .subtitle {
     font-size: 0.95rem;
+  }
+
+  .currentPrice {
+    font-size: 1.5rem;
   }
 }
 </style>

@@ -60,18 +60,19 @@ const handleSubmit = async () => {
 }
 
 onMounted(async () => {
-  // if (!route.query.userId || !route.query.token) {
-  //   router.push('/error', { replace: true })
-  //   return
-  // }
-  // // Verify token and get user email
-  // try {
-  //   const response = await api.get(`/auth/verify-token?token=${token.value}`)
-  //   userEmail.value = response.data.email
-  // } catch (error) {
-  //   message.value = 'Invalid or expired link'
-  //   isSuccess.value = false
-  // }
+  if (!route.query.userId || !route.query.token) {
+    router.push('/error', { replace: true })
+    return
+  }
+
+  try {
+    await api.get(`/auth/verify-password-token`, {
+      userId: route.query.userId,
+      token: route.query.token,
+    })
+  } catch (error) {
+    router.push('/error', { replace: true })
+  }
 })
 </script>
 

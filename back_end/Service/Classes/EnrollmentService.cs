@@ -15,13 +15,15 @@ public class EnrollmentService : IEnrollmentService
     private readonly IEnrollmentRepository _enrollmentRepository;
     private readonly IMapper _mapper;
     private readonly SlugHelper _slugHelper;
+    private readonly ICourseRepository _courseRepository;
     
-    public EnrollmentService(AppDbContext context,  IEnrollmentRepository enrollmentRepository, IMapper mapper,  SlugHelper slugHelper)
+    public EnrollmentService(AppDbContext context,  IEnrollmentRepository enrollmentRepository, IMapper mapper,  SlugHelper slugHelper, ICourseRepository courseRepository)
     {
         _context = context;
         _enrollmentRepository = enrollmentRepository;
         _mapper = mapper;
         _slugHelper = slugHelper;
+        _courseRepository = courseRepository;
     }
 
     public async Task Enroll(string userId, int itemId)
@@ -82,5 +84,44 @@ public class EnrollmentService : IEnrollmentService
                     .ToList()
             ))
             .ToListAsync();
+    }
+
+    public async Task EnrollFreeCourse(string userId, int courseId)
+    {
+        var course = await _courseRepository.GetCourseByIdAsync(courseId);
+        if (course == null)
+        {
+            throw new ApiExceptionResponse("Course not found");
+        }
+
+        var finalPrice = course.SalePrice ?? course.ListedPrice ?? 0;
+
+        if (finalPrice > 0)
+        {
+            throw new ApiExceptionResponse("This course is not free!");
+        }
+
+        var payment = new Payment
+        {
+            UserId = userId,
+            CourseId = courseId,
+            Amount = 0,
+            Method = "FREE",
+            Status = "PAID",
+            CreatedAt = DateTime.UtcNow,
+            PaidAt = DateTime.UtcNow,
+        };
+        _context.Payments.Add(payment);
+
+        var enrollment = new Enrollment
+        {
+            ItemId = courseId,
+            UserId = userId,
+            EnrolledAt = DateTime.UtcNow,
+            Status = true
+        };
+        _context.Enrollments.Add(enrollment);
+
+        await _context.SaveChangesAsync();
     }
 }

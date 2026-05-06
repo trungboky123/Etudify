@@ -424,11 +424,11 @@ onUnmounted(() => {
                   </button>
                   <button type="submit" class="saveBtn"
                   :disabled="isSaving">
-                    <span v-if="isSaving" class="btnLoading">
+                    <span v-if="isSaving" class="btnLoading" style="display: flex; align-items: center; gap: 8px;">
                       <span class="spinner"></span>
                       {{ t('admin.addCourse.saving') }}
                     </span>
-                    <span v-else>
+                    <span v-else style="display: flex; align-items: center; gap: 8px;">
                       <i class="bi bi-floppy"></i>
                       {{ t('admin.addCourse.save') }}
                     </span>

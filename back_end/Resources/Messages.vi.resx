@@ -135,4 +135,7 @@
     <data name="PaymentNotFound" xml:space="preserve">
         <value>Không tìm thấy thanh toán!</value>
     </data>
+    <data name="RoleNotFound" xml:space="preserve">
+        <value>Không tìm thấy quyền!</value>
+    </data>
 </root>

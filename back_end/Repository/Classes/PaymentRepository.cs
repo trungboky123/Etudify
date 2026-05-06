@@ -77,4 +77,13 @@ public class PaymentRepository : IPaymentRepository
             .Include(p => p.Course)
             .FirstOrDefaultAsync(p => p.OrderCode == orderCode);
     }
+
+    public async Task<List<Payment>> GetByUserIdAsync(string userId)
+    {
+        return await _context.Payments
+            .Include(p => p.Course)
+            .Where(p => p.UserId == userId && p.Status == "PAID")
+            .OrderByDescending(p => p.PaidAt)
+            .ToListAsync();
+    }
 }

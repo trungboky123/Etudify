@@ -19,8 +19,9 @@ public class PaymentService : IPaymentService
     private readonly IEnrollmentService _enrollmentService;
     private readonly BackgroundTaskQueue _taskQueue;
     private readonly MailSender _mailSender;
+    private readonly ICourseRepository _courseRepository;
 
-    public PaymentService(IPaymentRepository paymentRepository, AppDbContext context,  PayOsService payOsService,  IStringLocalizer<Messages> localizer, IEnrollmentService enrollmentService, BackgroundTaskQueue taskQueue, MailSender mailSender)
+    public PaymentService(IPaymentRepository paymentRepository, AppDbContext context,  PayOsService payOsService,  IStringLocalizer<Messages> localizer, IEnrollmentService enrollmentService, BackgroundTaskQueue taskQueue, MailSender mailSender, ICourseRepository courseRepository)
     {
         _paymentRepository = paymentRepository;
         _context = context;
@@ -29,6 +30,7 @@ public class PaymentService : IPaymentService
         _enrollmentService = enrollmentService;
         _taskQueue = taskQueue;
         _mailSender = mailSender;
+        _courseRepository = courseRepository;
     }
 
     public async Task<decimal> TotalRevenue()
@@ -131,5 +133,43 @@ public class PaymentService : IPaymentService
         {
             await _mailSender.SendPurchaseItem(payment.User.Email, payment.User.UserName, payment.Course.Name);
         });
+    }
+
+    public async Task<List<PaymentGroupResponse>> GetTransactionByUserId(string userId)
+    {
+        var payments = await _paymentRepository.GetByUserIdAsync(userId);
+
+        if (!payments.Any()) return new List<PaymentGroupResponse>();
+
+        var courseIds = payments.Select(p => p.CourseId)
+            .Distinct()
+            .ToList();
+        var courses = await _courseRepository.GetAllByIdsAsync(courseIds);
+        var courseDict = courses.ToDictionary(c => c.Id);
+
+        var response = payments.Select(p =>
+        {
+            courseDict.TryGetValue(p.CourseId, out var course);
+            return new PaymentResponse
+            {
+                ItemId = p.CourseId,
+                ItemName = course.Name,
+                ThumbnailUrl = course.ThumbnailUrl,
+                Amount = p.Amount,
+                Status = p.Status,
+                Method = p.Method,
+                PaidAt = p.PaidAt,
+            };
+        }).ToList();
+
+        var grouped = response.GroupBy(p => DateOnly.FromDateTime(p.PaidAt))
+            .OrderByDescending(g => g.Key)
+            .Select(g => new PaymentGroupResponse
+            {
+                Date = g.Key,
+                Payments = g.ToList()
+            }).ToList();
+
+        return grouped;
     }
 }

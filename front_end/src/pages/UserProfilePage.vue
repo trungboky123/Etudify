@@ -62,6 +62,7 @@ onMounted(async () => {
   if (auth.user?.id && id !== auth.user.id) {
     router.push('/error')
   }
+  avatarPreview.value = auth.user?.avatarUrl || ''
 
   document.title = `${auth.user?.fullName} | My Profile`
 })
@@ -75,15 +76,9 @@ const handleAvatarChange = (e) => {
 }
 
 const handleRemoveAvatar = () => {
-  avatarPreview.value = 'https://i.pinimg.com/736x/21/91/6e/21916e491ef0d796398f5724c313bbe7.jpg'
+  avatarPreview.value = auth.user?.avatarUrl || ''
   avatarFile.value = null
-
-  auth.user.avatarUrl = 'https://i.pinimg.com/736x/21/91/6e/21916e491ef0d796398f5724c313bbe7.jpg'
-  newData.value.removeAvatar = true
-
-  if (fileInput.value) {
-    fileInput.value.value = null
-  }
+  fileInput.value.value = null
 }
 
 const verifyCurrentEmail = async () => {
@@ -177,9 +172,6 @@ const saveProfile = async () => {
   if (avatarFile.value) {
     formData.append('avatar', avatarFile.value)
   }
-  if (newData.value.removeAvatar) {
-    formData.append('removeAvatar', 'true')
-  }
 
   isSaving.value = true
   message.value = ''
@@ -268,7 +260,7 @@ const saveProfile = async () => {
                   </label>
                 </div>
 
-                <div v-if="isEditing" class="avatar-actions">
+                <div v-if="isEditing && avatarPreview !== auth.user?.avatarUrl" class="avatar-actions">
                   <button type="button" class="remove-btn" @click="handleRemoveAvatar">
                     <i class="bi bi-trash"></i>
                     {{ t('admin.addAccount.remove') }}

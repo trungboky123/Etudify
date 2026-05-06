@@ -47,6 +47,10 @@ const calculateDiscount = () => {
   return Math.round(discount)
 }
 
+const handleGoToMyEnrollments = () => {
+  router.push(`/enrollments/${auth.user?.id}`)
+}
+
 const handleLogin = () => {
   router.push({
     path: '/login',
@@ -65,7 +69,7 @@ const checkLogin = () => {
   }
 }
 
-const checkInWishlist = async() => {
+const checkInWishlist = async () => {
   const itemId = id
   const res = await api.get(`/wishlists/find?itemId=${itemId}`)
 
@@ -76,11 +80,11 @@ const checkInWishlist = async() => {
   }
 }
 
-const checkEnrollment = async() => {
+const checkEnrollment = async () => {
   const res = await api.get('/enrollments/check', {
     params: {
-      itemId: id
-    }
+      itemId: id,
+    },
   })
   const data = res.data
   if (data === true) {
@@ -90,12 +94,12 @@ const checkEnrollment = async() => {
   }
 }
 
-const handleAddToWishlist = async() => {
+const handleAddToWishlist = async () => {
   const itemId = id
   try {
     await api.post(`/wishlists/add?itemId=${itemId}`)
   } catch (error) {
-    console.log("Error in adding to your wishlist: " + error.response.data);
+    console.log('Error in adding to your wishlist: ' + error.response.data)
     isInWishList.value = false
     return
   }
@@ -103,12 +107,12 @@ const handleAddToWishlist = async() => {
   isInWishList.value = true
 }
 
-const removeFromWishlist = async() => {
+const removeFromWishlist = async () => {
   const itemId = id
   try {
     await api.delete(`/wishlists/remove?itemId=${itemId}`)
   } catch (error) {
-    console.log("Error in removing from your wishlist: " + error.response.data);
+    console.log('Error in removing from your wishlist: ' + error.response.data)
     isInWishList.value = false
     return
   }
@@ -116,21 +120,38 @@ const removeFromWishlist = async() => {
   isInWishList.value = false
 }
 
-const handleBuyCourse = async(courseId) => {
+const handleBuyCourse = async (courseId) => {
   const payment = usePaymentStore()
-  const res = await api.post("/payments/create", {
+  const res = await api.post('/payments/create', {
     itemId: courseId,
-    amount: course.value.salePrice ?? course.value.listedPrice
+    amount: course.value.salePrice ?? course.value.listedPrice,
   })
   payment.info = res.data
   payment.info = {
     ...payment.info,
     name: course.value.name,
-    id: course.value.id
+    id: course.value.id,
   }
   router.push({
     path: `/payment/${course.value.slug}/${courseId}`,
   })
+}
+
+const handleGetCourse = async (courseId) => {
+  try {
+    await api.post(`/enrollments/free?courseId=${courseId}`)
+    await api.delete('/wishlists/remove', {
+      params: {
+        itemId: courseId,
+      },
+    })
+  } catch (error) {
+    console.log(error.response?.data)
+    return
+  }
+
+  hasEnrolled.value = true
+  isInWishList.value = false
 }
 
 const getCourse = async () => {
@@ -162,7 +183,9 @@ onMounted(async () => {
             <div class="courseBreadcrumb">
               <RouterLink to="/home" style="color: black"> {{ t('details.home') }} </RouterLink>
               <i class="bi bi-chevron-right"></i>
-              <RouterLink to="/public-courses" style="color: black"> {{ t('details.courses') }} </RouterLink>
+              <RouterLink to="/public-courses" style="color: black">
+                {{ t('details.courses') }}
+              </RouterLink>
               <i class="bi bi-chevron-right"></i>
               <span class="courseBreadcrumbCurrent">
                 {{ course.name }}

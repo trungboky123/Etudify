@@ -83,15 +83,17 @@ const handleClickOutside = (e) => {
   }
 }
 
-const formatDate = (date) =>
+const formatDate = (utcString) =>
   computed(() => {
-    const utcDate = new Date(date)
+    if (!utcString) return ''
+    const iso = utcString.split('.')[0].replace(' ', 'T') + 'Z'
+    const utcDate = new Date(iso)
 
     if (locale.value === 'vi') {
       return utcDate.toLocaleDateString('vi-VN', {
         year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
         timeZone: 'Asia/Ho_Chi_Minh',
       })
     } else if (locale.value === 'fr') {

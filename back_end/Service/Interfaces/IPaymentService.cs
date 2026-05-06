@@ -10,4 +10,5 @@ public interface IPaymentService
     Task<List<CourseSoldResponse>> GetTopSoldCourses();
     Task<Dictionary<string, object>> CreatePayment(string userId, PaymentRequest request);
     Task<string> GetPaymentStatus(long orderCode);
+    Task<List<PaymentGroupResponse>> GetTransactionByUserId(string userId);
 }

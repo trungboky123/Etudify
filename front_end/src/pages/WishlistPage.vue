@@ -99,11 +99,11 @@ const handleClickOutside = (e) => {
   }
 }
 
-const handleRemove = async(itemId) => {
+const handleRemove = async (itemId) => {
   try {
     await api.delete(`/wishlists/remove?itemId=${itemId}`)
   } catch (error) {
-    console.log("Error in removing from your wishlist: " + error.response.data);
+    console.log('Error in removing from your wishlist: ' + error.response.data)
     return
   }
 
@@ -142,15 +142,17 @@ const formatPrice = (price) => {
   }).format(price)
 }
 
-const formatDate = (date) =>
+const formatDate = (isoString) =>
   computed(() => {
-    const utcDate = new Date(date)
+    if (!isoString) return ''
+    const iso = isoString.split('.')[0].replace(' ', 'T') + 'Z'
+    const utcDate = new Date(iso)
 
     if (locale.value === 'vi') {
       return utcDate.toLocaleDateString('vi-VN', {
         year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
         timeZone: 'Asia/Ho_Chi_Minh',
       })
     } else if (locale.value === 'fr') {
@@ -327,7 +329,10 @@ watch(searchKeyword, (newVal) => {
                   <i class="bi bi-calendar-event"></i>
                   <span>Added {{ formatDate(course.addedAt) }}</span>
                 </div>
-                <button class="viewBtn" @click="router.push(`/public-course-details/${course.slug}/${course.itemId}`)">
+                <button
+                  class="viewBtn"
+                  @click="router.push(`/public-course-details/${course.slug}/${course.itemId}`)"
+                >
                   View Details
                   <i class="bi bi-arrow-right"></i>
                 </button>

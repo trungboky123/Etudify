@@ -51,4 +51,13 @@ public class CourseRepository : ICourseRepository
             .Include(c => c.Instructor)
             .FirstOrDefaultAsync(c => c.Id == courseId);
     }
+
+    public async Task<List<Course>> GetAllByIdsAsync(List<int> courseIds)
+    {
+        return await _context.Courses
+            .Include(c => c.Categories)
+            .Include(c => c.Instructor)
+            .Where(c => courseIds.Contains(c.Id))
+            .ToListAsync();
+    }
 }

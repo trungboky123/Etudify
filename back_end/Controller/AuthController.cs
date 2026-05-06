@@ -246,6 +246,7 @@ public class AuthController : ControllerBase
             throw new ApiExceptionResponse(_localizer["PasswordInvalid"]);
         }
         
+        user.EmailConfirmed = true;
         return Ok(new { message = _localizer["ChangePasswordSuccess"] });
     }
 

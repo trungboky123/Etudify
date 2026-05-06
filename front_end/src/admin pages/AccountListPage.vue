@@ -96,6 +96,10 @@ const handleStatusChange = (status) => {
   statusOpen.value = false
 }
 
+const handleEditAccount = (userId) => {
+  router.push(`/admin/accounts/edit/${userId}`)
+}
+
 const getRoleBadgeClass = (role) => {
   const roleClasses = {
     Admin: 'roleAdmin',

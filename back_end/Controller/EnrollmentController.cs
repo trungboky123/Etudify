@@ -33,4 +33,13 @@ public class EnrollmentController : ControllerBase
         var results = await _enrollmentService.GetByUserId(userId, keyword, categoryId, sortBy, sortDir);
         return Ok(results);
     }
+    
+    [Authorize]
+    [HttpPost("free")]
+    public async Task<IActionResult> EnrollFreeCourse([FromQuery] int courseId)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        await _enrollmentService.EnrollFreeCourse(userId, courseId);
+        return Ok();
+    }
 }

@@ -222,7 +222,7 @@ const currentLang = computed(() => {
               </RouterLink>
               <RouterLink
                 class="hd-item"
-                to="/transaction-history"
+                :to="`/transaction/${auth.user?.id}`"
                 @click="() => (userOpen = false)"
               >
                 <i class="bi bi-clock-history"></i>

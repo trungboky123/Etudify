@@ -3,6 +3,7 @@ import AddAccountPage from '@/admin pages/AddAccountPage.vue'
 import AddCoursePage from '@/admin pages/AddCoursePage.vue'
 import CourseListPage from '@/admin pages/CourseListPage.vue'
 import DashboardPage from '@/admin pages/DashboardPage.vue'
+import EditAccountPage from '@/admin pages/EditAccountPage.vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import MainLayout from '@/layouts/MainLayout.vue'
 import ErrorPage from '@/pages/ErrorPage.vue'
@@ -14,6 +15,7 @@ import PublicCoursesPage from '@/pages/PublicCoursesPage.vue'
 import QrPage from '@/pages/QrPage.vue'
 import RegisterPage from '@/pages/RegisterPage.vue'
 import SetPasswordPage from '@/pages/SetPasswordPage.vue'
+import TransactionHistoryPage from '@/pages/TransactionHistoryPage.vue'
 import UserProfilePage from '@/pages/UserProfilePage.vue'
 import VerifyEmailPage from '@/pages/VerifyEmailPage.vue'
 import WishlistPage from '@/pages/WishlistPage.vue'
@@ -108,6 +110,14 @@ const router = createRouter({
             title: 'Wishlist',
             requiresAuth: true
           }
+        },
+        {
+          path: '/transaction/:id',
+          component: TransactionHistoryPage,
+          meta: {
+            title: "Transaction History",
+            requiresAuth: true
+          }
         }
       ]
     },
@@ -138,6 +148,13 @@ const router = createRouter({
           component: AddAccountPage,
           meta: {
             title: "Add Account"
+          }
+        },
+        {
+          path: 'accounts/edit/:id',
+          component: EditAccountPage,
+          meta: {
+            title: "Edit Account"
           }
         },
         {

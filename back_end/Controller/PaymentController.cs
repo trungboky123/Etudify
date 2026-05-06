@@ -57,4 +57,13 @@ public class PaymentController : ControllerBase
         var result = await _paymentService.GetPaymentStatus(orderCode);
         return Ok(result);
     }
+
+    [Authorize]
+    [HttpGet("transaction")]
+    public async Task<IActionResult> GetTransaction()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var result = await _paymentService.GetTransactionByUserId(userId);
+        return Ok(result);
+    }
 }

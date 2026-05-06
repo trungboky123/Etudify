@@ -9,4 +9,5 @@ public interface IPaymentRepository
     Task<List<MonthlyRevenueResponse>> GetMonthlyRevenue();
     Task<List<CourseSoldResponse>> GetTopSoldCourses();
     Task<Payment?> GetByOrderCodeAsync(long orderCode);
+    Task<List<Payment>> GetByUserIdAsync(string userId);
 }

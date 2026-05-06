@@ -18,4 +18,6 @@ public interface IUserService
     Task SendVerificationEmail(User user);
     Task SendResetPassword(User user);
     Task<List<UserResponse>> GetAllInstructors();
+    Task<UserResponse> GetUserById(string userId);
+    Task UpdateUser(string? userId, UpdateUserRequest request);
 }

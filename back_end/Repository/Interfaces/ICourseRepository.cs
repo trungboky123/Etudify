@@ -9,4 +9,5 @@ public interface ICourseRepository
     IQueryable<Course> GetAllCourses(); 
     IQueryable<Course> GetPublicCourses();
     Task<Course?> GetCourseByIdAsync(int courseId);
+    Task<List<Course>> GetAllByIdsAsync(List<int> courseIds);
 }

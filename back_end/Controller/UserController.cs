@@ -171,4 +171,20 @@ public class UserController : ControllerBase
         var result = await _userService.GetAllInstructors();
         return Ok(result);
     }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("{userId}")]
+    public async Task<IActionResult> GetUserById([FromRoute] string userId)
+    {
+        var result = await _userService.GetUserById(userId);
+        return Ok(result);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPatch("{userId}")]
+    public async Task<IActionResult> UpdateUser([FromRoute] string userId, [FromForm] UpdateUserRequest request)
+    {
+        await _userService.UpdateUser(userId, request);
+        return Ok(new { message = _localizer["UpdateSuccess"] });
+    }
 }

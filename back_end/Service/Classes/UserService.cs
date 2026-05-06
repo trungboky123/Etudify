@@ -112,12 +112,6 @@ public class UserService : IUserService
         
         bool updated = false;
 
-        if (request.RemoveAvatar)
-        {
-            user.AvatarUrl = "https://i.pinimg.com/736x/21/91/6e/21916e491ef0d796398f5724c313bbe7.jpg";
-            updated = true;
-        }
-
         if (request.FullName != null)
         {
             if (string.IsNullOrWhiteSpace(request.FullName)) throw new ApiExceptionResponse(_localizer["FullNameRequired"]);
@@ -129,11 +123,11 @@ public class UserService : IUserService
         {
             if (string.IsNullOrWhiteSpace(request.UserName)) throw new ApiExceptionResponse(_localizer["UsernameRequired"]);
             var duplicate = await _userManager.FindByNameAsync(request.UserName);
-            if (duplicate != null)
+            if (duplicate != null && duplicate.Id != user.Id)
             {
                 throw new ApiExceptionResponse(_localizer["UsernameExisted"]);
             }
-            user.UserName = request.UserName;
+            await _userManager.SetUserNameAsync(user, request.UserName);    
             updated = true;
         }
 
@@ -272,5 +266,95 @@ public class UserService : IUserService
     {
         var instructors = await _userManager.GetUsersInRoleAsync("Instructor");
         return _mapper.Map<List<UserResponse>>(instructors);
+    }
+
+    public async Task<UserResponse> GetUserById(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        var role = (await _userManager.GetRolesAsync(user)).FirstOrDefault();
+        var res = _mapper.Map<UserResponse>(user);
+        res.Role = role;
+        return res;
+    }
+    
+    public async Task UpdateUser(string? userId, UpdateUserRequest request)
+    {
+        var validate = _updateUserValidator.Validate(request);
+        if (!validate.IsValid)
+        {
+            var error = validate.Errors.First();
+            throw new ApiExceptionResponse(error.ErrorMessage);
+        }
+        
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return;
+        
+        bool updated = false;
+
+        if (request.FullName != null)
+        {
+            if (string.IsNullOrWhiteSpace(request.FullName)) throw new ApiExceptionResponse(_localizer["FullNameRequired"]);
+            user.FullName = request.FullName;
+            updated = true;
+        }
+        
+        if (request.UserName != null)
+        {
+            if (string.IsNullOrWhiteSpace(request.UserName)) throw new ApiExceptionResponse(_localizer["UsernameRequired"]);
+            var duplicate = await _userManager.FindByNameAsync(request.UserName);
+            if (duplicate != null && duplicate.Id != user.Id)
+            {
+                throw new ApiExceptionResponse(_localizer["UsernameExisted"]);
+            }
+            await _userManager.SetUserNameAsync(user, request.UserName);    
+            updated = true;
+        }
+
+        if (request.Email != null)
+        {
+            if (string.IsNullOrEmpty(request.Email)) throw new ApiExceptionResponse(_localizer["EmailRequired"]);
+            var duplicate = await _userManager.FindByEmailAsync(request.Email);
+            if (duplicate != null && duplicate.Id != user.Id)
+            {
+                throw new ApiExceptionResponse(_localizer["EmailExisted"]);
+            }
+            await CodeChangeEmail(user, request.Email);
+            updated = true;
+        }
+
+        if (request.Avatar != null && request.Avatar.Length > 0)
+        {
+            string avatarUrl = await _cloudinaryService.UploadUserAvatar(request.Avatar, userId);
+            user.AvatarUrl = avatarUrl;
+            updated = true;
+        }
+
+        if (request.RoleId.HasValue)
+        {
+            var role = await _roleManager.FindByIdAsync(request.RoleId.Value.ToString());
+            if (role == null)
+            {
+                throw new ApiExceptionResponse(_localizer["RoleNotFound"]);
+            }
+
+            var currentRoles = await _userManager.GetRolesAsync(user);
+
+            if (currentRoles.Any())
+            {
+                await _userManager.RemoveFromRolesAsync(user, currentRoles);
+            }
+
+            await _userManager.AddToRoleAsync(user, role.Name);
+            updated = true;
+        }
+
+        if (request.Status != null)
+        {
+            user.Status = request.Status.Value;
+            updated = true;
+        }
+
+        if (!updated) throw new ApiExceptionResponse(_localizer["NoFields"]);
+        await _userManager.UpdateAsync(user);
     }
 }

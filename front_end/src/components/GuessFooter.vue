@@ -31,15 +31,15 @@ const { t } = useI18n()
 
       <div class="footer-column">
         <strong>{{ t('footer.followUs') }}</strong>
-        <RouterLink to="https://www.facebook.com/buihien.tiensi.58/" class="social-item" target="blank">
+        <a href="https://www.facebook.com/buihien.tiensi.58/" class="social-item" target="_blank">
           Facebook
-        </RouterLink>
-        <RouterLink to="https://www.instagram.com/its.trhin/" class="social-item" target="blank">
+        </a>
+        <a href="https://www.instagram.com/its.trhin/" class="social-item" target="_blank">
           Instagram
-        </RouterLink>
-        <RouterLink to="https://www.tiktok.com/@ngtrh_hgbaov?lang=en" class="social-item" target="blank">
+        </a>
+        <a href="https://www.tiktok.com/@ngtrh_hgbaov?lang=en" class="social-item" target="_blank">
           Tiktok
-        </RouterLink>
+        </a>
       </div>
     </div>
 

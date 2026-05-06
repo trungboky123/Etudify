@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import GuessHeader from '@/components/GuessHeader.vue';
 
 </script>

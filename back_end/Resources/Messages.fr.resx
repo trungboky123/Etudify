@@ -136,4 +136,7 @@
     <data name="PaymentNotFound" xml:space="preserve">
         <value>Paiement introuvable!</value>
     </data>
+    <data name="RoleNotFound" xml:space="preserve">
+        <value>Rôle introuvable!</value>
+    </data>
 </root>

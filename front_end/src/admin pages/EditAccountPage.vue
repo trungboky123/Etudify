@@ -1,7 +1,7 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/api'
 
 const { t } = useI18n()
@@ -9,32 +9,31 @@ const { sidebarCollapsed } = defineProps({
   sidebarCollapsed: Boolean,
 })
 const router = useRouter()
-const roles = ref([])
+const route = useRoute()
+
+const id = route.params.id
 const fileInputRef = ref(null)
-const roleRef = ref(null)
-const roleOpen = ref(false)
-const defaultAvatar = 'https://i.pinimg.com/736x/21/91/6e/21916e491ef0d796398f5724c313bbe7.jpg'
-const user = ref({
+const newData = ref({})
+const roles = ref([])
+const account = ref({
   fullName: '',
   email: '',
   username: '',
+  avatarUrl: '',
   roleId: '',
-  status: true,
+  status: '',
 })
-const roleName = computed(() => {
-  return roles.value.find((r) => r.id === user.value.roleId)?.name || ''
-})
-const previewAvatar = ref(null)
+const previewAvatar = ref('')
 const avatarFile = ref(null)
 const message = ref('')
 const isError = ref(false)
 const isSaving = ref(false)
 
-const handleClickOutside = (e) => {
-  if (roleRef.value && !roleRef.value.contains(e.target)) {
-    roleOpen.value = false
-  }
-}
+const roleRef = ref(null)
+const roleOpen = ref(false)
+const roleName = computed(() => {
+  return roles.value.find((r) => r.id === account.value.roleId)?.name || ''
+})
 
 const handleAvatarClick = () => {
   fileInputRef.value.click()
@@ -49,44 +48,56 @@ const handleAvatarChange = (e) => {
 }
 
 const handleRemoveAvatar = () => {
-  previewAvatar.value = defaultAvatar
+  previewAvatar.value = account.value.avatarUrl
   avatarFile.value = null
-  user.value.avatarUrl = defaultAvatar
-  fileInputRef.value = null
-}
-
-const getAllRoles = async () => {
-  const res = await api.get('/users/roles')
-  roles.value = res.data
+  fileInputRef.value.value = null
 }
 
 const handleRoleChange = (roleId) => {
-  user.value.roleId = roleId
+  account.value.roleId = roleId
+  newData.value = {
+    ...newData.value,
+    roleId: roleId,
+  }
   roleOpen.value = false
 }
 
-const roleBadge = computed(() => {
-  const role = roles.value.find((r) => r.id === user.value.roleId)
-  return role ? `badge${role.name}` : ''
-})
+const handleStatusChange = (status) => {
+  account.value.status = status
+  newData.value = {
+    ...newData.value,
+    status: status,
+  }
+}
 
-const handleSubmit = async () => {
+const handleSubmit = async() => {
+  isSaving.value = true
+  message.value = ''
+
   const formData = new FormData()
-  formData.append('fullName', user.value.fullName)
-  formData.append('email', user.value.email)
-  formData.append('username', user.value.username)
-  formData.append('roleId', user.value.roleId)
-  formData.append('status', user.value.status)
+  const lang = localStorage.getItem('lang') || 'en'
+  if (newData.value.fullName) {
+    formData.append('fullName', newData.value.fullName)
+  }
+  if (newData.value.username) {
+    formData.append('username', newData.value.username)
+  }
+  if (newData.value.email) {
+    formData.append('email', newData.value.email)
+  }
+  if (newData.value.roleId) {
+    formData.append('roleId', newData.value.roleId)
+  }
+  if (newData.value.status) {
+    formData.append('status', newData.value.status)
+  }
   if (avatarFile.value) {
     formData.append('avatar', avatarFile.value)
   }
 
-  isSaving.value = true
-  message.value = ''
-  const lang = localStorage.getItem('lang') || 'en'
   let res = null
   try {
-    res = await api.post('/users/add', formData, {
+    res = await api.patch(`/users/${id}`, formData, {
       headers: {
         'Accept-Language': lang,
       },
@@ -102,21 +113,48 @@ const handleSubmit = async () => {
   message.value = res.data?.message?.value
   isError.value = false
 
-  let timer = null
-  if (timer) clearTimeout(timer)
-
-  timer = setTimeout(() => {
+  setTimeout(() => {
     router.push('/admin/accounts')
-  }, 2000)
+  }, 1500)
+}
+
+const handleClickOutside = (e) => {
+  if (roleRef.value && !roleRef.value.contains(e.target)) {
+    roleOpen.value = false
+  }
+}
+
+const getAllRoles = async () => {
+  const res = await api.get('/users/roles')
+  roles.value = res.data
+}
+
+const getAccount = async () => {
+  const res = await api.get(`/users/${id}`)
+  const roleId = roles.value.find((r) => r.name === res.data.role)?.id
+  account.value = {
+    ...res.data,
+    roleId: roleId,
+  }
+  previewAvatar.value = account.value.avatarUrl || ''
 }
 
 onMounted(() => {
   getAllRoles()
-  document.addEventListener('mousedown', handleClickOutside)
+  getAccount()
+  document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
-  document.removeEventListener('mousedown', handleClickOutside)
+  document.removeEventListener('click', handleClickOutside)
+})
+
+watch(account, (newVal) => {
+  newData.value = {
+    ...newVal
+  }
+}, {
+  deep: true
 })
 </script>
 
@@ -130,19 +168,23 @@ onUnmounted(() => {
             {{ t('admin.sidebar.accounts') }}
           </span>
           <i class="bi bi-chevron-right"></i>
-          <span class="breadcrumbCurrent">{{ t('admin.addAccount.title') }}</span>
+          <span class="breadcrumbCurrent">
+            {{ t('admin.editAccount.title') }}
+          </span>
         </div>
 
         <div class="pageHeader">
           <div>
-            <h1 class="pageTitle">{{ t('admin.addAccount.title') }}</h1>
+            <h1 class="pageTitle">
+              {{ t('admin.editAccount.title') }}
+            </h1>
             <p class="pageSubtitle">
-              {{ t('admin.addAccount.subtitle') }}
+              {{ t('admin.editAccount.subtitle') }}
             </p>
           </div>
           <button class="backBtn" @click="router.push('/admin/accounts')">
             <i class="bi bi-arrow-left"></i>
-            {{ t('admin.addAccount.back') }}
+            {{ t('admin.editAccount.back') }}
           </button>
         </div>
 
@@ -153,36 +195,37 @@ onUnmounted(() => {
                 <i class="bi bi-person-circle"></i>
                 Avatar
               </h3>
+
               <div class="avatarWrapper">
                 <div class="avatarPreview" @click="handleAvatarClick">
-                  <img v-if="previewAvatar" :src="previewAvatar" alt="Avatar" class="avatarImg" />
-                  <img v-else :src="defaultAvatar" alt="Avatar" class="avatarImg" />
+                  <img :src="previewAvatar" alt="Avatar" class="avatarImg" />
                   <div class="avatarOverlay">
                     <i class="bi bi-camera"></i>
-                    <span>{{ t('admin.addAccount.change') }}</span>
+                    <span>{{ t('admin.editAccount.change') }}</span>
                   </div>
                 </div>
+
                 <input
                   type="file"
                   ref="fileInputRef"
                   accept="image/*"
-                  class="fileInput"
                   @change="handleAvatarChange"
+                  class="fileInput"
                 />
+
                 <div class="avatarActions">
                   <button
-                    v-if="previewAvatar && previewAvatar !== defaultAvatar"
+                    v-if="previewAvatar !== account.avatarUrl"
                     type="button"
                     class="removeBtn"
                     @click="handleRemoveAvatar"
                   >
                     <i class="bi bi-trash"></i>
-                    {{ t('admin.addAccount.remove') }}
+                    {{ t('admin.editAccount.remove') }}
                   </button>
                 </div>
                 <p class="avatarNote">
-                  {{ t('admin.addAccount.recommended') }}
-                  200x200px, JPG/PNG, max 2MB
+                  {{ t('admin.editAccount.recommended') }} 200x200px, JPG/PNG, max 2MB
                 </p>
               </div>
 
@@ -190,7 +233,7 @@ onUnmounted(() => {
 
               <h3 class="cardTitle">
                 <i class="bi bi-shield-fill"></i>
-                {{ t('admin.addAccount.permissions') }}
+                {{ t('admin.editAccount.permissions') }}
               </h3>
 
               <div class="formGroup">
@@ -206,52 +249,50 @@ onUnmounted(() => {
                       v-for="role in roles"
                       :key="role.id"
                       type="button"
-                      :class="{ filterDropdownItem: true, active: role.id === user.roleId }"
+                      :class="{ filterDropdownItem: true, active: role.id === account.roleId }"
                       @click="handleRoleChange(role.id)"
                     >
                       {{ role.name }}
-                      <i v-if="user.roleId === role.id" class="bi bi-check-lg"></i>
+                      <i v-if="account.roleId === role.id" class="bi bi-check-lg"></i>
                     </button>
                   </div>
                 </div>
               </div>
 
               <div class="formGroup">
-                <label class="label">{{ t('admin.addAccount.status') }}</label>
+                <label class="label">{{ t('admin.editAccount.status') }}</label>
                 <div class="radioGroup">
-                  <label :class="{ radioItem: true, radioActive: user.status }">
+                  <label :class="{ radioItem: true, radioActive: account.status }">
                     <input
                       type="radio"
                       name="status"
-                      v-model="user.status"
                       class="radioInput"
-                      :value="true"
+                      @change="handleStatusChange(true)"
                     />
                     <div class="radioBox">
                       <div class="radioCircle"></div>
                       <div>
-                        <span class="radioLabel">{{ t('admin.addAccount.status.active') }}</span>
+                        <span class="radioLabel">{{ t('admin.editAccount.active') }}</span>
                         <span class="radioDesc">{{
-                          t('admin.addAccount.status.active.description')
+                          t('admin.editAccount.active.description')
                         }}</span>
                       </div>
                     </div>
                   </label>
 
-                  <label :class="{ radioItem: true, radioActive: !user.status }">
+                  <label :class="{ radioItem: true, radioActive: !account.status }">
                     <input
                       type="radio"
                       name="status"
-                      v-model="user.status"
                       class="radioInput"
-                      :value="false"
+                      @change="handleStatusChange(false)"
                     />
                     <div class="radioBox">
                       <div class="radioCircle"></div>
                       <div>
-                        <span class="radioLabel">{{ t('admin.addAccount.status.inactive') }}</span>
+                        <span class="radioLabel">{{ t('admin.editAccount.inactive') }}</span>
                         <span class="radioDesc">{{
-                          t('admin.addAccount.status.inactive.description')
+                          t('admin.editAccount.inactive.description')
                         }}</span>
                       </div>
                     </div>
@@ -263,89 +304,78 @@ onUnmounted(() => {
             <div class="infoCard">
               <h3 class="cardTitle">
                 <i class="bi bi-person-fill"></i>
-                {{ t('admin.addAccount.information') }}
+                {{ t('admin.editAccount.information') }}
               </h3>
 
               <div class="formGroup">
-                <label class="label">{{ t('admin.addAccount.fullName') }}</label>
+                <label for="fullName" class="label">
+                  {{ t('admin.editAccount.fullName') }}
+                </label>
                 <div class="inputWrapper">
                   <i class="bi bi-person"></i>
                   <input
                     type="text"
-                    name="fullName"
-                    v-model="user.fullName"
+                    id="fullName"
                     class="input"
-                    :placeholder="t('admin.addAccount.fullName.placeholder')"
+                    :placeholder="t('admin.editAccount.fullName.placeholder')"
+                    v-model="account.fullName"
                     :required="true"
                   />
                 </div>
               </div>
-
               <div class="formGroup">
-                <label class="label">{{ t('admin.addAccount.email') }}</label>
+                <label for="email" class="label">
+                  {{ t('admin.editAccount.email') }}
+                </label>
                 <div class="inputWrapper">
                   <i class="bi bi-envelope"></i>
                   <input
-                    type="email"
-                    name="email"
-                    v-model="user.email"
+                    type="text"
+                    id="email"
                     class="input"
-                    :placeholder="t('admin.addAccount.email.placeholder')"
+                    :placeholder="t('admin.editAccount.email.placeholder')"
+                    v-model="account.email"
                     :required="true"
                   />
                 </div>
               </div>
-
               <div class="formGroup">
-                <label class="label">{{ t('admin.addAccount.username') }}</label>
+                <label for="username" class="label">
+                  {{ t('admin.editAccount.username') }}
+                </label>
                 <div class="inputWrapper">
                   <i class="bi bi-at"></i>
                   <input
                     type="text"
-                    name="username"
-                    v-model="user.username"
+                    id="username"
                     class="input"
-                    :placeholder="t('admin.addAccount.username.placeholder')"
+                    :placeholder="t('admin.editAccount.username.placeholder')"
+                    v-model="account.username"
                     :required="true"
                   />
                 </div>
               </div>
-
-              <p class="note">
-                {{ t('admin.addAccount.note') }}
-              </p>
 
               <div class="cardDivider"></div>
 
               <h3 class="cardTitle">
                 <i class="bi bi-eye"></i>
-                {{ t('admin.addAccount.preview') }}
+                {{ t('admin.editAccount.preview') }}
               </h3>
               <div class="previewBox">
                 <div class="previewAvatar">
-                  <img
-                    v-if="previewAvatar"
-                    :src="previewAvatar"
-                    alt="Avatar"
-                    class="previewAvatarImg"
-                  />
-                  <img
-                    v-else
-                    src="https://i.pinimg.com/736x/21/91/6e/21916e491ef0d796398f5724c313bbe7.jpg"
-                    alt="Avatar"
-                    class="previewAvatarImg"
-                  />
+                  <img :src="previewAvatar" alt="Avatar" class="previewAvatarImg" />
                 </div>
                 <div class="previewInfo">
                   <span class="previewName">
-                    {{ user.fullName || t('admin.addAccount.fullName') }}
+                    {{ account.fullName || t('admin.editAccount.fullName') }}
                   </span>
                   <span class="previewUsername">
-                    @{{ user.username || t('admin.addAccount.username') }}
+                    @{{ account.username || t('admin.editAccount.username') }}
                   </span>
                 </div>
-                <span :class="`previewBadge ${roleBadge}`">
-                  {{ roleName || t('admin.addAccount.role') }}
+                <span :class="`previewBadge badge${roleName}`">
+                  {{ roleName }}
                 </span>
               </div>
 
@@ -357,16 +387,16 @@ onUnmounted(() => {
               <div class="actions">
                 <button type="button" class="cancelBtn" @click="router.push('/admin/accounts')">
                   <i class="bi bi-x-lg"></i>
-                  {{ t('admin.addAccount.cancel') }}
+                  {{ t('admin.editAccount.cancel') }}
                 </button>
                 <button type="submit" class="saveBtn" :disabled="isSaving">
                   <span v-if="isSaving" style="display: flex; align-items: center; gap: 8px;">
                     <span class="spinner"></span>
-                    {{ t('admin.addAccount.saving') }}
+                    {{ t("admin.editAccount.saving") }}
                   </span>
                   <span v-else style="display: flex; align-items: center; gap: 8px;">
                     <i class="bi bi-floppy"></i>
-                    {{ t('admin.addAccount.save') }}
+                    {{ t("admin.editAccount.saveChanges") }}
                   </span>
                 </button>
               </div>
@@ -705,32 +735,6 @@ onUnmounted(() => {
   }
 }
 
-.input {
-  width: 100%;
-  height: 46px;
-  padding: 0 16px 0 42px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 0.93rem;
-  color: #1e293b;
-  background: #fafbfc;
-  outline: none;
-  transition: all 0.25s;
-  font-family: inherit;
-  box-sizing: border-box;
-
-  &:focus {
-    border-color: #667eea;
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
-  }
-
-  &::placeholder {
-    color: #cbd5e1;
-  }
-}
-
-// Custom Dropdown
 .dropdown {
   position: relative;
 }
@@ -841,6 +845,31 @@ onUnmounted(() => {
     background: #f0f2ff;
     color: #667eea;
     font-weight: 600;
+  }
+}
+
+.input {
+  width: 100%;
+  height: 46px;
+  padding: 0 16px 0 42px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.93rem;
+  color: #1e293b;
+  background: #fafbfc;
+  outline: none;
+  transition: all 0.25s;
+  font-family: inherit;
+  box-sizing: border-box;
+
+  &:focus {
+    border-color: #667eea;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+  }
+
+  &::placeholder {
+    color: #cbd5e1;
   }
 }
 
@@ -1008,8 +1037,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 16px;
   border-radius: 12px;
+  padding: 12px 16px;
   font-size: 0.88rem;
   margin-bottom: 20px;
   animation: slideDown 0.3s ease;
@@ -1018,14 +1047,6 @@ onUnmounted(() => {
     font-size: 1.1rem;
     flex-shrink: 0;
   }
-}
-
-.note {
-  font-size: 0.88rem;
-  color: red;
-  margin-top: 12px;
-  margin-bottom: 16px;
-  margin-left: 15px;
 }
 
 .messageError {
@@ -1089,7 +1110,6 @@ onUnmounted(() => {
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 
   i {
-    display: inline-block;
     font-size: 1rem;
   }
 
